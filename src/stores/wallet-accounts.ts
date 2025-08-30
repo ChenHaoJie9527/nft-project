@@ -2,11 +2,7 @@ import type { MetaMaskSDK } from '@metamask/sdk';
 import { ethers } from 'ethers';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import {
-  // parseEIP712Signature,
-  parsePersonalSignature,
-  // type SignatureResult,
-} from '@/lib/signature-utils';
+import { parsePersonalSignature } from '@/lib/signature-utils';
 import type { EIP712Message } from '@/types';
 
 const ONE_DAY = 24 * 60 * 60 * 1000;

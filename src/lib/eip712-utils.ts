@@ -8,7 +8,6 @@ type NftMint = {
     tokenId: number;
     nonce: number;
     side?: 0 | 1; // 0: 卖出, 1: 买入
-    // 添加实际订单参数
     matchingPolicy?: string;
     nftContract?: string;
     price?: string | bigint;
@@ -57,16 +56,16 @@ export const createEIP712Message = {
       side: order.side, // 0: 卖出, 1: 买入
       matchingPolicy: order.matchingPolicy,
       nftContract: order.nftContract,
-      tokenId: BigInt(order.tokenId), // 改为BigInt
+      tokenId: BigInt(order.tokenId),
       AssetType: 0,
-      amount: BigInt(1), // 改为BigInt
+      amount: BigInt(1),
       paymentToken: '0x0000000000000000000000000000000000000000',
-      price: BigInt(order.price ?? 0), // 改为BigInt
-      validUntil: BigInt(order.validUntil ?? 0), // 改为BigInt
-      createAT: BigInt(order.createAT ?? 0), // 改为BigInt
+      price: BigInt(order.price ?? 0),
+      validUntil: BigInt(order.validUntil ?? 0),
+      createAT: BigInt(order.createAT ?? 0),
       fees: order.fees,
       extraParams: order.extraParams,
-      nonce: BigInt(order.nonce), // 改为BigInt
+      nonce: BigInt(order.nonce),
     },
   }),
 };

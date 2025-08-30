@@ -14,63 +14,13 @@ import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
 import { createContractInstance } from '@/lib/contract-utils';
 import { createEIP712Message } from '@/lib/eip712-utils';
+import { formatAddress } from '@/lib/format-address';
+import { formatBigInt } from '@/lib/format-bigint';
+import { formatTimestamp } from '@/lib/format-timestamp';
+import { safeStringify } from '@/lib/safe-stringify-bigint';
 import { getChainName } from '@/lib/signature-utils';
 import type { SendParams } from '@/types';
-// import type { SendParams } from '@/types';
 import { Button } from '../ui/button';
-
-const ZERO_REGEX = /0+$/;
-
-const formatBigInt = (
-  value: bigint | string | number,
-  decimals = 18
-): string => {
-  try {
-    const bigIntValue = typeof value === 'bigint' ? value : BigInt(value);
-    const divisor = BigInt(10 ** decimals);
-    const integerPart = bigIntValue / divisor;
-    const decimalPart = bigIntValue % divisor;
-
-    if (decimalPart === BigInt(0)) {
-      return integerPart.toString();
-    }
-
-    const decimalString = decimalPart.toString().padStart(decimals, '0');
-    // 移除尾部的零
-    const trimmedDecimal = decimalString.replace(ZERO_REGEX, '');
-    return `${integerPart}.${trimmedDecimal}`;
-  } catch (_err) {
-    return value.toString();
-  }
-};
-
-// 添加一个格式化地址的辅助函数
-const formatAddress = (address: string): string => {
-  if (!address) {
-    return '';
-  }
-  return `${address.slice(0, 6)}...${address.slice(-4)}`;
-};
-
-// 添加一个格式化时间的辅助函数
-const formatTimestamp = (timestamp: bigint | number): string => {
-  const date = new Date(Number(timestamp) * 1000);
-  return date.toLocaleString('zh-CN');
-};
-
-// 添加一个安全的 JSON 序列化函数，处理 BigInt
-const safeStringify = (obj: any, space?: number): string => {
-  return JSON.stringify(
-    obj,
-    (_key, value) => {
-      if (typeof value === 'bigint') {
-        return `${value}n`; // 添加 'n' 后缀表示 BigInt
-      }
-      return value;
-    },
-    space
-  );
-};
 
 export default function EIP712Signature() {
   const {

@@ -43,3 +43,8 @@ export const orderSideMap = {
   Sell: 0,
   Buy: 1,
 } as const;
+
+/**
+ * 0 补全正则
+ */
+export const ZERO_REGEX = /0+$/;
