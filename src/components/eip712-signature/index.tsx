@@ -25,7 +25,6 @@ import { Button } from '../ui/button';
 export default function EIP712Signature() {
   const {
     signEIP712,
-    // signPersonalMessage,
     isConnected,
     accounts,
     chainId,
@@ -43,24 +42,25 @@ export default function EIP712Signature() {
   const [buyLoading, setBuyLoading] = useState(false);
   const [buyError, setBuyError] = useState<string | null>(null);
 
-  // const [personalSignature, setPersonalSignature] = useState<string>('');
-
   const handleEIP712Sign = async () => {
     setLocalError(null);
     setLocalLoading(true);
 
+    // 检查是否连接钱包
     if (!isConnected()) {
       setLocalError('请先连接钱包');
       setLocalLoading(false);
       return;
     }
 
+    // 检查是否选择网络
     if (!chainId) {
       setLocalError('请先选择网络');
       setLocalLoading(false);
       return;
     }
 
+    // 检查是否初始化MetaMask SDK
     if (!metamaskSDK) {
       setLocalError('MetaMask SDK not available');
       setLocalLoading(false);
@@ -68,22 +68,28 @@ export default function EIP712Signature() {
     }
 
     try {
-      // 先准备订单参数
+      // 获取区块号
       const blockNumber = await getBlockNumber();
+      // 通过区块号获取区块信息
       const blockInfo = await getBlockInfo(blockNumber);
+      // 计算时间
       const chainTime = BigInt(
         blockInfo?.timestamp ?? Math.floor(Date.now() / 1000)
       );
+      // 计算有效期
       const validUntil = chainTime + BigInt(3600);
+      // 计算创建时间
       const createAT = chainTime;
+      // 计算价格
       const ethPrice = ethers.parseEther(price);
 
-      // 先获取合约nonce，确保签名和执行的nonce一致
+      // 获取合约nonce，确保签名和执行的nonce一致
       const nftOrderAbi = findAbiByContractName('nft-order-manager');
       console.log('获取到的ABI:', nftOrderAbi);
       console.log('合约地址:', addressMap.contractAddress);
       console.log('链ID:', chainId);
 
+      // 创建合约实例
       const nftOrderContract = await createContractInstance(metamaskSDK, {
         chainId,
         abi: assertAbi(nftOrderAbi),
