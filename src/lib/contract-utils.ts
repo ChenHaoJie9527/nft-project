@@ -21,7 +21,7 @@ export async function createContractInstance(
   try {
     const ethereum = metamaskSDK.getProvider();
     if (!ethereum) {
-      return;
+      return null;
     }
 
     // 创建 ethers provider
@@ -36,9 +36,9 @@ export async function createContractInstance(
       contractConfig.abi,
       signer
     );
+
     return contract;
-  } catch (err) {
-    console.log('创建合约实例失败: ', err);
+  } catch (_err) {
     return null;
   }
 }

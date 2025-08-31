@@ -16,8 +16,9 @@ export async function getBlockInfo(
 
     const provider = new ethers.BrowserProvider(ethereum);
     const block = await provider.getBlock(blockNumber);
+
     return block;
-  } catch {
+  } catch (_err) {
     return null;
   }
 }

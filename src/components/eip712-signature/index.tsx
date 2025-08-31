@@ -1,7 +1,7 @@
 'use client';
 
-import { type Contract, ethers } from 'ethers';
-import { useState } from 'react';
+import { ethers } from 'ethers';
+import { useEffect, useState } from 'react';
 import {
   addressMap,
   assetTypeMap,
@@ -21,11 +21,7 @@ import { formatTimestamp } from '@/lib/format-timestamp';
 import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
 import { safeStringify } from '@/lib/safe-stringify-bigint';
 import { getChainName } from '@/lib/signature-utils';
-import {
-  setSignature,
-  useOrderStateMachineStore,
-} from '@/stores/order-state-machine';
-import type { SendParams } from '@/types';
+import { useOrderStateMachineStore } from '@/stores/order-state-machine';
 import { Button } from '../ui/button';
 
 export default function EIP712Signature() {
@@ -41,8 +37,13 @@ export default function EIP712Signature() {
   const [price] = useState('0.0001');
   const [orderData, setOrderData] = useLocalStorage<any>('sell-order', {});
   const [buyOrderData, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
-  const { currentState, context, progress, start, reset, getCurrentStep } =
-    useOrderStateMachineStore();
+  const { context, start } = useOrderStateMachineStore();
+
+  useEffect(() => {
+    if (context.orderData) {
+      setOrderData(context.orderData);
+    }
+  }, [context.orderData]);
 
   // 添加本地状态管理
   const [localLoading, setLocalLoading] = useState(false);
