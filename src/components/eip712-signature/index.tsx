@@ -13,12 +13,18 @@ import { useMetamask } from '@/hooks/use-metamask';
 import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
 import { createContractInstance } from '@/lib/contract-utils';
+import { createSendParams } from '@/lib/create-send-params';
 import { createEIP712Message } from '@/lib/eip712-utils';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
+import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
 import { safeStringify } from '@/lib/safe-stringify-bigint';
 import { getChainName } from '@/lib/signature-utils';
+import {
+  setSignature,
+  useOrderStateMachineStore,
+} from '@/stores/order-state-machine';
 import type { SendParams } from '@/types';
 import { Button } from '../ui/button';
 
@@ -35,6 +41,8 @@ export default function EIP712Signature() {
   const [price] = useState('0.0001');
   const [orderData, setOrderData] = useLocalStorage<any>('sell-order', {});
   const [buyOrderData, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
+  const { currentState, context, progress, start, reset, getCurrentStep } =
+    useOrderStateMachineStore();
 
   // 添加本地状态管理
   const [localLoading, setLocalLoading] = useState(false);
@@ -43,286 +51,24 @@ export default function EIP712Signature() {
   const [buyError, setBuyError] = useState<string | null>(null);
 
   const handleEIP712Sign = async () => {
-    setLocalError(null);
-    setLocalLoading(true);
-
-    // 检查是否连接钱包
-    if (!isConnected()) {
-      setLocalError('请先连接钱包');
-      setLocalLoading(false);
-      return;
-    }
-
-    // 检查是否选择网络
-    if (!chainId) {
-      setLocalError('请先选择网络');
-      setLocalLoading(false);
-      return;
-    }
-
-    // 检查是否初始化MetaMask SDK
-    if (!metamaskSDK) {
-      setLocalError('MetaMask SDK not available');
-      setLocalLoading(false);
-      return;
-    }
-
     try {
-      // 获取区块号
-      const blockNumber = await getBlockNumber();
-      // 通过区块号获取区块信息
-      const blockInfo = await getBlockInfo(blockNumber);
-      // 计算时间
-      const chainTime = BigInt(
-        blockInfo?.timestamp ?? Math.floor(Date.now() / 1000)
-      );
-      // 计算有效期
-      const validUntil = chainTime + BigInt(3600);
-      // 计算创建时间
-      const createAT = chainTime;
-      // 计算价格
-      const ethPrice = ethers.parseEther(price);
-
-      // 获取合约nonce，确保签名和执行的nonce一致
-      const nftOrderAbi = findAbiByContractName('nft-order-manager');
-      console.log('获取到的ABI:', nftOrderAbi);
-      console.log('合约地址:', addressMap.contractAddress);
-      console.log('链ID:', chainId);
-
-      // 创建合约实例
-      const nftOrderContract = await createContractInstance(metamaskSDK, {
+      setLocalLoading(true);
+      // 启动状态极
+      await start({
         chainId,
-        abi: assertAbi(nftOrderAbi),
-        contractAddress: addressMap.contractAddress,
+        accounts,
+        metamaskSDK,
+        price,
       });
 
-      console.log('合约实例创建成功:', Boolean(nftOrderContract));
-
-      const nonce = await getNftOrderNonce(nftOrderContract);
-      if (nonce === null || nonce === undefined) {
-        setLocalError('获取nonce失败 - 请检查合约地址和网络连接');
-        setLocalLoading(false);
-        return;
-      }
-
-      console.log('成功获取nonce:', nonce);
-
-      // 创建EIP712消息，使用合约nonce
-      const typedData = createEIP712Message.nftMint({
-        chainId,
-        contractAddress: addressMap.contractAddress,
-        order: {
-          to: accounts[0] as `0x${string}`,
-          tokenId: 10,
-          nonce: Number(nonce), // 使用合约nonce，不是Date.now()
-          side: 0,
-          matchingPolicy: matchingPolicyMap.default,
-          nftContract: addressMap.nftContractAddress,
-          price: ethPrice.toString(),
-          validUntil: validUntil.toString(),
-          createAT: createAT.toString(),
-          fees: [],
-          extraParams: '0x',
-        },
-      });
-
-      console.log('卖单EIP712消息:', typedData);
-      console.log('使用的nonce:', nonce);
-
-      // 解析处 v s r
-      const signature = await signEIP712(typedData);
-
-      if (metamaskSDK) {
-        // 获取当前区块号
-        // const blockNumber = await getBlockNumber(); // This line is now redundant
-
-        // 创建合约实例
-        const erc721Abi = findAbiByContractName('721');
-        const contract = await createContractInstance(metamaskSDK, {
-          contractAddress: addressMap.nftContractAddress, // TODO: nft合约地址，后续动态获取
-          abi: assertAbi(erc721Abi),
-          chainId,
-        });
-
-        const receiptResult = await sendApprove(contract);
-
-        if (receiptResult && signature) {
-          // 订单方向
-          const side = orderSideMap.Sell;
-
-          // 后端返回的nft列表里的每个nft对应的tokenId，1是伪代码
-          const nftTokenId = BigInt(10);
-
-          // 匹配策略地址: 后续会有多个策略，根据不同的场景去使用
-          const matchingPolicy = matchingPolicyMap.default;
-
-          // nft合约地址
-          const nftContract = addressMap.nftContractAddress;
-
-          // 资产类型
-          const assetType = assetTypeMap.ERC721;
-
-          // 订单数量
-          const amount = BigInt(1);
-
-          // 支付token地址
-          const paymentToken = ethers.ZeroAddress;
-
-          const sendParams = createSendParams({
-            vrs: signature,
-            blockNumber: blockNumber ?? 0,
-            signatureVersion: 0, // Single: 单笔交易(0), Batch: 批量交易(1)
-            extraSignature: '0x',
-            order: {
-              nonce, // 使用之前获取的nonce
-              trader: accounts[0] as `0x${string}`,
-              side,
-              matchingPolicy,
-              nftContract,
-              tokenId: nftTokenId,
-              AssetType: assetType,
-              amount,
-              paymentToken,
-              price: ethPrice,
-              validUntil,
-              createAT,
-              fees: [],
-              extraParams: '0x',
-            },
-          });
-          console.log('sendParams:', sendParams);
-          setOrderData(sendParams);
-          setLocalLoading(false);
-        }
-      }
+      // 状态机会自动执行到 SIGNING 状态，然后等待签名
+      // 当用户完成签名后，调用 setSignature 继续流程
     } catch (err) {
-      console.error('EIP712签名失败:', err);
-      setLocalError(
-        `EIP712签名失败: ${err instanceof Error ? err.message : '未知错误'}`
-      );
+      setLocalError(err as string);
+    } finally {
       setLocalLoading(false);
     }
   };
-
-  async function getBlockInfo(blockNumber: number | null) {
-    if (!metamaskSDK) {
-      console.error('MetaMask SDK not available');
-      return null;
-    }
-
-    if (!blockNumber) {
-      return null;
-    }
-
-    try {
-      // 获取 ethereum provider
-      const ethereum = metamaskSDK.getProvider();
-
-      if (!ethereum) {
-        throw new Error('Ethereum provider not available');
-      }
-
-      // 创建 ethers provider
-      const provider = new ethers.BrowserProvider(ethereum);
-
-      // 通过区块号获取区块信息
-      const block = await provider.getBlock(blockNumber);
-
-      if (block) {
-        return block;
-      }
-      return null;
-    } catch (_err) {
-      return null;
-    }
-  }
-
-  async function getBlockNumber() {
-    if (typeof window !== 'undefined' && window?.ethereum) {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const blockNumber = await provider.getBlockNumber();
-      return blockNumber;
-    }
-    return null;
-  }
-
-  // 构建挂单数据
-  function createSendParams({
-    vrs,
-    order,
-    blockNumber,
-    signatureVersion = 0,
-    extraSignature = '0x',
-  }: SendParams) {
-    const params = {
-      order,
-      v: vrs.v,
-      r: vrs.r,
-      s: vrs.s,
-      blockNumber,
-      signatureVersion,
-      extraSignature,
-    };
-
-    return params;
-  }
-
-  // 获取nft订单合约nonce值
-  async function getNftOrderNonce(contract: Contract | null | undefined) {
-    if (!contract) {
-      console.error('合约实例为空，无法获取nonce');
-      return null;
-    }
-
-    try {
-      console.log('正在获取nonce，合约地址:', contract.target);
-
-      // 首先尝试getNonce方法
-      try {
-        const nonce = await contract.getNonce();
-        console.log('通过getNonce获取成功:', nonce);
-        return nonce;
-      } catch (getNonceError) {
-        console.warn('getNonce方法失败，尝试从nonces映射获取:', getNonceError);
-
-        // 备用方案：从nonces映射获取当前用户的nonce
-        if (accounts?.[0]) {
-          const userNonce = await contract.nonces(accounts[0]);
-          console.log('通过nonces映射获取成功:', userNonce);
-          return userNonce;
-        }
-
-        console.error('无法获取用户地址');
-        return null;
-      }
-    } catch (err) {
-      console.error('获取nonce失败，详细错误:', err);
-      console.error(
-        '错误消息:',
-        err instanceof Error ? err.message : '未知错误'
-      );
-      return null;
-    }
-  }
-
-  // 发送Approve授权交易
-  async function sendApprove(contract?: Contract | null) {
-    try {
-      if (contract) {
-        const toAddress = addressMap.approveAddress;
-        const tokenId = 10;
-        console.log('正在授权NFT给合约:', toAddress);
-        const tx = await contract.approve(toAddress, tokenId);
-        console.log('授权交易已发送:', tx.hash);
-        const receipt = await tx.wait();
-        console.log('授权交易确认:', receipt);
-        return receipt;
-      }
-    } catch (err) {
-      console.log('approve调用失败', err);
-      return null;
-    }
-  }
 
   // 1. 修复买单创建 - onBuyClick 函数
   const onBuyClick = async () => {
@@ -967,7 +713,10 @@ export default function EIP712Signature() {
                 );
 
                 if (nftOrderContract) {
-                  const nonce = await getNftOrderNonce(nftOrderContract);
+                  const nonce = await getNftOrderNonce(
+                    nftOrderContract,
+                    accounts
+                  );
                   console.log('调试 - 获取到的nonce:', nonce);
                   console.log('调试 - nonce类型:', typeof nonce);
                   console.log('调试 - nonce是否为null:', nonce === null);
