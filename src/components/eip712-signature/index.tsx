@@ -21,6 +21,7 @@ import { formatTimestamp } from '@/lib/format-timestamp';
 import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
 import { safeStringify } from '@/lib/safe-stringify-bigint';
 import { getChainName } from '@/lib/signature-utils';
+import { useBuyOrderStateMachineStore } from '@/stores/buy-order-state-machine';
 import { useOrderStateMachineStore } from '@/stores/order-state-machine';
 import { Button } from '../ui/button';
 
@@ -38,12 +39,20 @@ export default function EIP712Signature() {
   const [orderData, setOrderData] = useLocalStorage<any>('sell-order', {});
   const [buyOrderData, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
   const { context, start } = useOrderStateMachineStore();
+  const { context: buyContext, start: startBuyOrder } =
+    useBuyOrderStateMachineStore();
 
   useEffect(() => {
     if (context.orderData) {
       setOrderData(context.orderData);
     }
   }, [context.orderData]);
+
+  useEffect(() => {
+    if (buyContext.orderData) {
+      setBuyOrderData(buyContext.orderData);
+    }
+  }, [buyContext.orderData]);
 
   // 添加本地状态管理
   const [localLoading, setLocalLoading] = useState(false);
@@ -54,17 +63,15 @@ export default function EIP712Signature() {
   const handleEIP712Sign = async () => {
     try {
       setLocalLoading(true);
-      // 启动状态极
+      // 启动状态机
       await start({
         chainId,
         accounts,
         metamaskSDK,
         price,
       });
-
-      // 状态机会自动执行到 SIGNING 状态，然后等待签名
-      // 当用户完成签名后，调用 setSignature 继续流程
     } catch (err) {
+      console.error('挂单失败:', err);
       setLocalError(err as string);
     } finally {
       setLocalLoading(false);
@@ -73,138 +80,18 @@ export default function EIP712Signature() {
 
   // 1. 修复买单创建 - onBuyClick 函数
   const onBuyClick = async () => {
-    setBuyError(null);
-    setBuyLoading(true);
-
-    if (!isConnected()) {
-      setBuyError('请先连接钱包');
-      setBuyLoading(false);
-      return;
-    }
-
-    if (!chainId) {
-      setBuyError('请先选择网络');
-      setBuyLoading(false);
-      return;
-    }
-
-    if (!metamaskSDK) {
-      setBuyError('MetaMask SDK not available');
-      setBuyLoading(false);
-      return;
-    }
-
-    // 检查是否有卖单数据
-    if (!orderData || Object.keys(orderData).length === 0) {
-      setBuyError('请先创建卖单');
-      setBuyLoading(false);
-      return;
-    }
-
     try {
-      const blockNumber = await getBlockNumber();
-      const blockInfo = await getBlockInfo(blockNumber);
-      const chainTime = BigInt(
-        blockInfo?.timestamp ?? Math.floor(Date.now() / 1000)
-      );
-      const validUntil = chainTime + BigInt(3600);
-      const createAT = chainTime;
-      const ethPrice = ethers.parseEther(price);
-
-      // 先获取合约nonce，确保签名和执行的nonce一致
-      const nftOrderAbi = findAbiByContractName('nft-order-manager');
-      const nftOrderContract = await createContractInstance(metamaskSDK, {
+      setBuyLoading(true);
+      await startBuyOrder({
         chainId,
-        abi: assertAbi(nftOrderAbi),
-        contractAddress: addressMap.contractAddress,
+        accounts,
+        metamaskSDK,
+        price,
       });
-
-      const nonce = await getNftOrderNonce(nftOrderContract);
-      if (nonce === null || nonce === undefined) {
-        setBuyError('获取nonce失败');
-        setBuyLoading(false);
-        return;
-      }
-
-      console.log('买单成功获取nonce:', nonce);
-
-      // 1.创建买单EIP712消息 - 使用与卖单相同的参数
-      const buyTypeData = createEIP712Message.nftMint({
-        chainId,
-        contractAddress: addressMap.contractAddress,
-        order: {
-          to: accounts[0] as `0x${string}`,
-          tokenId: 10, // 与卖单一致
-          nonce: Number(nonce), // 使用合约nonce，不是Date.now()
-          side: 1, // 买单
-          matchingPolicy: matchingPolicyMap.default,
-          nftContract: addressMap.nftContractAddress,
-          price: ethPrice.toString(),
-          validUntil: validUntil.toString(),
-          createAT: createAT.toString(),
-          fees: [],
-          extraParams: '0x',
-        },
-      });
-
-      console.log('买单EIP712消息:', buyTypeData);
-      console.log('使用的nonce:', nonce);
-
-      // 2.进行EIP712签名
-      const buySignature = await signEIP712(buyTypeData);
-
-      // 3.买单不需要NFT授权，直接创建订单
-      if (buySignature) {
-        // 订单方向
-        const side = orderSideMap.Buy;
-
-        // 使用与卖单相同的tokenId
-        const nftTokenId = BigInt(10);
-
-        // 匹配策略地址
-        const matchingPolicy = matchingPolicyMap.default;
-
-        // 资产类型
-        const assetType = assetTypeMap.ERC721;
-
-        // 订单数量
-        const amount = BigInt(1);
-
-        // 支付token地址
-        const paymentToken = ethers.ZeroAddress;
-
-        const sendParams = createSendParams({
-          vrs: buySignature,
-          blockNumber: blockNumber ?? 0,
-          signatureVersion: 0,
-          extraSignature: '0x',
-          order: {
-            nonce, // 使用相同的nonce
-            trader: accounts[0] as `0x${string}`,
-            side,
-            matchingPolicy,
-            nftContract: addressMap.nftContractAddress,
-            tokenId: nftTokenId,
-            AssetType: assetType,
-            amount,
-            paymentToken,
-            price: ethPrice,
-            validUntil,
-            createAT,
-            fees: [],
-            extraParams: '0x',
-          },
-        });
-
-        console.log('买单参数:', sendParams);
-        setBuyOrderData(sendParams);
-        setBuyLoading(false);
-      }
-    } catch (err) {
-      console.error('买单创建失败:', err);
-      setBuyError(
-        `买单创建失败: ${err instanceof Error ? err.message : '未知错误'}`
-      );
+    } catch (_err) {
+      console.error('买单失败:', _err);
+      setBuyError(_err as string);
+    } finally {
       setBuyLoading(false);
     }
   };
