@@ -2,7 +2,7 @@
 
 import { createConfig, http } from 'wagmi';
 import { mainnet, sepolia } from 'wagmi/chains';
-import { injected, metaMask, safe, walletConnect } from 'wagmi/connectors';
+import { injected, safe, walletConnect } from 'wagmi/connectors';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 export const defaultChain = isDevelopment ? sepolia : mainnet;
@@ -10,8 +10,7 @@ export const defaultChain = isDevelopment ? sepolia : mainnet;
 export const wagmiConfig = createConfig({
   chains: [mainnet, sepolia],
   connectors: [
-    injected({ target: 'metaMask' }),
-    metaMask(),
+    injected(),
     walletConnect({
       projectId:
         process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
