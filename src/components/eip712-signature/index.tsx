@@ -2,19 +2,12 @@
 
 import { ethers } from 'ethers';
 import { useEffect, useState } from 'react';
-import {
-  addressMap,
-  assetTypeMap,
-  matchingPolicyMap,
-  orderSideMap,
-} from '@/constants';
+import { addressMap } from '@/constants';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useMetamask } from '@/hooks/use-metamask';
 import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
 import { createContractInstance } from '@/lib/contract-utils';
-import { createSendParams } from '@/lib/create-send-params';
-import { createEIP712Message } from '@/lib/eip712-utils';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
@@ -26,15 +19,7 @@ import { useOrderStateMachineStore } from '@/stores/order-state-machine';
 import { Button } from '../ui/button';
 
 export default function EIP712Signature() {
-  const {
-    signEIP712,
-    isConnected,
-    accounts,
-    chainId,
-    loading,
-    error,
-    metamaskSDK,
-  } = useMetamask();
+  const { accounts, chainId, loading, error, metamaskSDK } = useMetamask();
   const [price] = useState('0.0001');
   const [orderData, setOrderData] = useLocalStorage<any>('sell-order', {});
   const [buyOrderData, setBuyOrderData] = useLocalStorage<any>('buy-order', {});

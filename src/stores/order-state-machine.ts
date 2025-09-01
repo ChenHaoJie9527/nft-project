@@ -24,7 +24,7 @@ export const useOrderStateMachineStore = create<OrderStateMachineState>(
       error: null,
     },
     progress: 0,
-    debugMode: false, // 添加调试模式控制属性
+    debugMode: true, // 添加调试模式控制属性
 
     start: async (params) => {
       const { chainId, accounts, metamaskSDK, price } = params;
