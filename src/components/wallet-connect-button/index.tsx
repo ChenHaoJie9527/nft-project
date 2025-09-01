@@ -6,15 +6,15 @@ import Image from 'next/image';
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
-import { useLocalStorage } from '@/hooks/use-local-storage';
+// import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useBuyOrderStateMachineStore } from '@/stores/buy-order-state-machine';
 import { useOrderStateMachineStore } from '@/stores/order-state-machine';
 import { useWalletAccountsStore } from '@/stores/wallet-accounts';
 
 export default function WalletConnectButton() {
   const { isConnected } = useAccount();
-  const [, setOrderData] = useLocalStorage<any>('sell-order', {});
-  const [, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
+  // const [, setOrderData] = useLocalStorage<any>('sell-order', {});
+  // const [, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
 
   const handleDisconnect = () => {
     // 重置钱包账户状态
@@ -24,11 +24,9 @@ export default function WalletConnectButton() {
     walletStore.clearSignatureResult();
     walletStore.setError(null);
     walletStore.setLoading(false);
-    walletStore.setSignTypedDataAsync(null);
-    walletStore.setSignMessageAsync(null);
 
-    setOrderData({});
-    setBuyOrderData({});
+    // setOrderData({});
+    // setBuyOrderData({});
 
     // 重置订单状态机
     useOrderStateMachineStore.getState().reset();

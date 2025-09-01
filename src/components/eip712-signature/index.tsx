@@ -47,7 +47,6 @@ export default function EIP712Signature() {
   const handleEIP712Sign = async () => {
     try {
       setLocalLoading(true);
-      // 启动状态机 - 移除 metamaskSDK 参数
       await start({
         chainId,
         accounts,

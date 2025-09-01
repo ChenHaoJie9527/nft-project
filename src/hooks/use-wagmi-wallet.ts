@@ -48,8 +48,6 @@ export function useWagmiWallet() {
       setAccounts([]);
       setChainId(undefined);
       clearSignatureResult();
-      setSignTypedDataAsync(null);
-      setSignMessageAsync(null);
     }
   }, [
     address,
@@ -58,8 +56,6 @@ export function useWagmiWallet() {
     setAccounts,
     setChainId,
     clearSignatureResult,
-    setSignTypedDataAsync,
-    setSignMessageAsync,
   ]);
 
   /**

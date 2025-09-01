@@ -27,8 +27,6 @@ export const useOrderStateMachineStore = create<OrderStateMachineState>(
 
     start: async (params) => {
       const { chainId, accounts, price } = params;
-
-      // 初始化上下文 - 移除 metamaskSDK
       set((state) => ({
         context: { ...state.context, chainId, accounts, price },
         currentState: 'VALIDATING',
