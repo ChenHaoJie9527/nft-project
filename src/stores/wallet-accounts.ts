@@ -29,7 +29,7 @@ type WalletAccountsState = {
   setError: (error: Error | null) => void;
   setLoading: (loading: boolean) => void;
   setAutoConnect: (enabled: boolean) => void;
-  setChainId: (chainId: number) => void;
+  setChainId: (chainId?: number) => void;
   setSignTypedDataAsync: (fn: any) => void;
   setSignMessageAsync: (fn: any) => void;
   // 工具方法

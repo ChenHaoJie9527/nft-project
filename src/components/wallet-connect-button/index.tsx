@@ -3,9 +3,47 @@
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { AlertTriangle, ChevronDown, Wallet } from 'lucide-react';
 import Image from 'next/image';
+import { useEffect } from 'react';
+import { useAccount } from 'wagmi';
 import { Button } from '@/components/ui/button';
+import { useLocalStorage } from '@/hooks/use-local-storage';
+import { useBuyOrderStateMachineStore } from '@/stores/buy-order-state-machine';
+import { useOrderStateMachineStore } from '@/stores/order-state-machine';
+import { useWalletAccountsStore } from '@/stores/wallet-accounts';
 
 export default function WalletConnectButton() {
+  const { isConnected } = useAccount();
+  const [, setOrderData] = useLocalStorage<any>('sell-order', {});
+  const [, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
+
+  const handleDisconnect = () => {
+    // 重置钱包账户状态
+    const walletStore = useWalletAccountsStore.getState();
+    walletStore.setAccounts([]);
+    walletStore.setChainId(undefined);
+    walletStore.clearSignatureResult();
+    walletStore.setError(null);
+    walletStore.setLoading(false);
+    walletStore.setSignTypedDataAsync(null);
+    walletStore.setSignMessageAsync(null);
+
+    setOrderData({});
+    setBuyOrderData({});
+
+    // 重置订单状态机
+    useOrderStateMachineStore.getState().reset();
+
+    // 重置购买订单状态机
+    useBuyOrderStateMachineStore.getState().reset();
+  };
+
+  useEffect(() => {
+    if (!isConnected) {
+      console.log('断开链接了');
+      handleDisconnect();
+    }
+  }, [isConnected]);
+
   return (
     <ConnectButton.Custom>
       {({

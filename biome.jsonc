@@ -23,6 +23,9 @@
       },
       "nursery": {
         "useConsistentTypeDefinitions": "off"
+      },
+      "correctness": {
+        "useExhaustiveDependencies": "warn"
       }
     }
   }

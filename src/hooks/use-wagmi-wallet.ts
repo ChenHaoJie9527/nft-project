@@ -39,14 +39,40 @@ export function useWagmiWallet() {
     setSignMessageAsync(signMessageAsync);
   }, [signMessageAsync, setSignMessageAsync]);
 
-  // 移除 useEffect，改为手动同步方法
-  const syncState = () => {
-    if (address) {
+  useEffect(() => {
+    if (address && isConnected) {
       setAccounts([address]);
+      setChainId(chainId || undefined);
+    } else {
+      // 断开连接时清空状态
+      setAccounts([]);
+      setChainId(undefined);
+      clearSignatureResult();
+      setSignTypedDataAsync(null);
+      setSignMessageAsync(null);
+    }
+  }, [
+    address,
+    isConnected,
+    chainId,
+    setAccounts,
+    setChainId,
+    clearSignatureResult,
+    setSignTypedDataAsync,
+    setSignMessageAsync,
+  ]);
+
+  /**
+   * 同步账户和网络状态到 store
+   */
+  const syncState = () => {
+    if (address && isConnected) {
+      setAccounts([address]);
+      setChainId(chainId || undefined);
     } else {
       setAccounts([]);
+      setChainId(undefined);
     }
-    setChainId(chainId);
   };
 
   // 适配的签名方法
@@ -59,9 +85,9 @@ export function useWagmiWallet() {
   };
 
   return {
-    // 状态
-    accounts: address ? [address] : [],
-    chainId,
+    // 状态 - 优先使用 store 中的状态，确保一致性
+    accounts: address && isConnected ? [address] : [],
+    chainId: isConnected ? chainId || null : null,
     isStoreConnected: isConnected,
     isConnecting,
     loading,
@@ -69,12 +95,12 @@ export function useWagmiWallet() {
 
     // 方法
     truncateAddress,
-    getPrimaryAddress: () => address || '',
+    getPrimaryAddress: () => (address && isConnected ? address : ''),
     isConnected: () => isConnected,
     signEIP712: signEIP712WithWagmi,
     signPersonalMessage: signPersonalMessageWithWagmi,
     clearSignatureResult,
-    syncState, // 新增手动同步方法
+    syncState,
 
     // 签名结果
     lastEIP712SignatureResult,
