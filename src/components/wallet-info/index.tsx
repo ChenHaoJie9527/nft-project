@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useClientEffect } from '@/hooks/use-client-effect';
-import { useMetamask } from '@/hooks/use-metamask';
+import { useWagmiWallet } from '@/hooks/use-wagmi-wallet';
 
 export default function WalletInfo() {
-  const { accounts, truncateAddress, isConnected } = useMetamask();
+  const { accounts, truncateAddress, isConnected } = useWagmiWallet();
   const [mounted, setMounted] = useState(false);
 
   useClientEffect(() => {

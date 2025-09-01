@@ -3,15 +3,14 @@
 import { ethers } from 'ethers';
 import { useEffect, useState } from 'react';
 import { addressMap } from '@/constants';
+import { useClient } from '@/hooks/use-client';
 import { useLocalStorage } from '@/hooks/use-local-storage';
-import { useMetamask } from '@/hooks/use-metamask';
+import { useWagmiWallet } from '@/hooks/use-wagmi-wallet';
 import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
-import { createContractInstance } from '@/lib/contract-utils';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
-import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
 import { safeStringify } from '@/lib/safe-stringify-bigint';
 import { getChainName } from '@/lib/signature-utils';
 import { useBuyOrderStateMachineStore } from '@/stores/buy-order-state-machine';
@@ -19,13 +18,19 @@ import { useOrderStateMachineStore } from '@/stores/order-state-machine';
 import { Button } from '../ui/button';
 
 export default function EIP712Signature() {
-  const { accounts, chainId, loading, error, metamaskSDK } = useMetamask();
+  const { accounts, chainId, loading, error } = useWagmiWallet();
   const [price] = useState('0.0001');
   const [orderData, setOrderData] = useLocalStorage<any>('sell-order', {});
   const [buyOrderData, setBuyOrderData] = useLocalStorage<any>('buy-order', {});
   const { context, start } = useOrderStateMachineStore();
   const { context: buyContext, start: startBuyOrder } =
     useBuyOrderStateMachineStore();
+  // 添加本地状态管理
+  const [localLoading, setLocalLoading] = useState(false);
+  const [localError, setLocalError] = useState<string | null>(null);
+  const [buyLoading, setBuyLoading] = useState(false);
+  const [buyError, setBuyError] = useState<string | null>(null);
+  const isClient = useClient();
 
   useEffect(() => {
     if (context.orderData) {
@@ -33,26 +38,19 @@ export default function EIP712Signature() {
     }
   }, [context.orderData]);
 
-  useEffect(() => {
-    if (buyContext.orderData) {
-      setBuyOrderData(buyContext.orderData);
-    }
-  }, [buyContext.orderData]);
-
-  // 添加本地状态管理
-  const [localLoading, setLocalLoading] = useState(false);
-  const [localError, setLocalError] = useState<string | null>(null);
-  const [buyLoading, setBuyLoading] = useState(false);
-  const [buyError, setBuyError] = useState<string | null>(null);
+  // useEffect(() => {
+  //   if (buyContext.orderData) {
+  //     setBuyOrderData(buyContext.orderData);
+  //   }
+  // }, [buyContext.orderData]);
 
   const handleEIP712Sign = async () => {
     try {
       setLocalLoading(true);
-      // 启动状态机
+      // 启动状态机 - 移除 metamaskSDK 参数
       await start({
         chainId,
         accounts,
-        metamaskSDK,
         price,
       });
     } catch (err) {
@@ -225,7 +223,7 @@ export default function EIP712Signature() {
       <p>签名演示</p>
 
       {/* 显示当前链ID */}
-      {chainId && (
+      {isClient && chainId && (
         <div className="mb-4 text-sm text-white">
           当前网络: {getChainName(chainId)} ({chainId})
         </div>
@@ -550,64 +548,6 @@ export default function EIP712Signature() {
           </div>
         </div>
       </div>
-
-      <div className="flex w-full gap-2">
-        <Button
-          className="mt-4 max-w-[100px] rounded-md bg-gray-100 p-2 text-center text-gray-500 text-sm"
-          onClick={onMatchClick}
-        >
-          发起撮合交易
-        </Button>
-        <Button
-          className="mt-4 max-w-[100px] rounded-md bg-gray-100 p-2 text-center text-gray-500 text-sm"
-          onClick={onGetOrderHash}
-        >
-          获取订单hash
-        </Button>
-        <Button
-          className="mt-4 max-w-[100px] rounded-md bg-blue-100 p-2 text-center text-blue-500 text-sm"
-          onClick={async () => {
-            console.log('=== 调试信息 ===');
-            console.log('MetaMask SDK:', !!metamaskSDK);
-            console.log('链ID:', chainId);
-            console.log('账户:', accounts);
-            console.log('合约地址:', addressMap.contractAddress);
-
-            if (metamaskSDK && chainId) {
-              try {
-                const nftOrderAbi = findAbiByContractName('nft-order-manager');
-                const nftOrderContract = await createContractInstance(
-                  metamaskSDK,
-                  {
-                    chainId,
-                    abi: assertAbi(nftOrderAbi),
-                    contractAddress: addressMap.contractAddress,
-                  }
-                );
-
-                if (nftOrderContract) {
-                  const nonce = await getNftOrderNonce(
-                    nftOrderContract,
-                    accounts
-                  );
-                  console.log('调试 - 获取到的nonce:', nonce);
-                  console.log('调试 - nonce类型:', typeof nonce);
-                  console.log('调试 - nonce是否为null:', nonce === null);
-                  console.log(
-                    '调试 - nonce是否为undefined:',
-                    nonce === undefined
-                  );
-                }
-              } catch (err) {
-                console.error('调试 - 错误:', err);
-              }
-            }
-          }}
-        >
-          调试Nonce
-        </Button>
-      </div>
-
       {error && (
         <div className="text-red-500 text-sm">错误: {error.message}</div>
       )}

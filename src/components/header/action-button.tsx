@@ -1,13 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-// import { useMetamask } from '@/hooks/use-metamask';
 import { Button } from '@/components/ui/button';
 import { useClientEffect } from '@/hooks/use-client-effect';
 import WalletConnectButton from '../wallet-connect-button';
 
 export default function ActionButton() {
-  // const { connect, disconnect, loading, isConnected } = useMetamask();
   const [mounted, setMounted] = useState(false);
 
   useClientEffect(() => {

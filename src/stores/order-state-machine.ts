@@ -11,7 +11,6 @@ export const useOrderStateMachineStore = create<OrderStateMachineState>(
     context: {
       chainId: null,
       accounts: [],
-      metamaskSDK: null,
       price: '',
       blockNumber: null,
       chainTime: null,
@@ -27,11 +26,11 @@ export const useOrderStateMachineStore = create<OrderStateMachineState>(
     debugMode: true, // 添加调试模式控制属性
 
     start: async (params) => {
-      const { chainId, accounts, metamaskSDK, price } = params;
+      const { chainId, accounts, price } = params;
 
-      // 初始化上下文
+      // 初始化上下文 - 移除 metamaskSDK
       set((state) => ({
-        context: { ...state.context, chainId, accounts, metamaskSDK, price },
+        context: { ...state.context, chainId, accounts, price },
         currentState: 'VALIDATING',
         progress: stateConfigs.VALIDATING.progress,
       }));
@@ -46,7 +45,6 @@ export const useOrderStateMachineStore = create<OrderStateMachineState>(
         context: {
           chainId: null,
           accounts: [],
-          metamaskSDK: null,
           price: '',
           blockNumber: null,
           chainTime: null,

@@ -1,27 +1,34 @@
+import { readContract } from '@wagmi/core';
+import { wagmiConfig } from '@/configs/wagmi-config';
+import { addressMap } from '@/constants';
+import { findAbiByContractName } from '@/lib/abi-utils';
+
 export async function getNftOrderNonce(
-  contract: any,
-  accounts: any[]
+  chainId: number,
+  accounts: string[]
 ): Promise<number | null> {
-  if (!contract) {
+  if (!(chainId && accounts) || accounts.length === 0) {
     return null;
   }
 
   try {
-    // 首先尝试getNonce方法
-    try {
-      const nonce = await contract.getNonce();
-      return nonce;
-    } catch (_getNonceError) {
-      // 备用方案：从nonces映射获取当前用户的nonce
-      if (accounts?.[0]) {
-        try {
-          const userNonce = await contract.nonces(accounts[0]);
-          return userNonce;
-        } catch (_noncesError) {
-          return null;
-        }
-      }
+    // 获取 ABI
+    const nftOrder = findAbiByContractName('nft-order-manager');
+    if (!nftOrder) {
+      throw new Error('无法获取合约 ABI');
+    }
 
+    // 首先尝试 getNonce 方法
+    try {
+      const nonce = await readContract(wagmiConfig, {
+        address: addressMap.contractAddress as `0x${string}`,
+        abi: nftOrder,
+        functionName: 'getNonce',
+        chainId: chainId as 1 | 11155111,
+      });
+
+      return nonce as number | null;
+    } catch (_getNonceError) {
       return null;
     }
   } catch (_err) {

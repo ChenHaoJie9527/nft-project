@@ -1,3 +1,4 @@
+import { getPublicClient } from '@wagmi/core';
 import { ethers } from 'ethers';
 import {
   addressMap,
@@ -7,15 +8,17 @@ import {
 } from '@/constants';
 import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
-import { createContractInstance } from '@/lib/contract-utils';
+import {
+  checkContractAvailability,
+  createContractConfig,
+  readContractData,
+  writeContractData,
+} from '@/lib/contract-utils';
 import { createSendParams } from '@/lib/create-send-params';
 import { createEIP712Message } from '@/lib/eip712-utils';
-import { getBlockInfo } from '@/lib/get-block-info';
-import { getBlockNumber } from '@/lib/get-block-number';
-import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
-import { sendApprove } from '@/lib/send-approve';
 import { safeAllExists } from '@/lib/utils';
 import { useWalletAccountsStore } from '@/stores/wallet-accounts';
+import { wagmiConfig } from './wagmi-config';
 
 /**
  * 订单状态
@@ -33,12 +36,11 @@ export type OrderState =
   | 'ERROR';
 
 /**
- * 状态机上下文数据
+ * 状态机上下文数据 - 移除 metamaskSDK
  */
 type OrderContext = {
   chainId: number | null; // 链ID
   accounts: string[]; // 账户列表
-  metamaskSDK: any; // MetaMask SDK
   price: string; // 价格
   blockNumber: number | null; // 区块号
   chainTime: bigint | null; // 链时间
@@ -63,10 +65,7 @@ type StateConfig = {
   canTransition: (context: OrderContext) => boolean; // 是否可以转换
 };
 
-type ActionParams = Pick<
-  OrderContext,
-  'chainId' | 'accounts' | 'metamaskSDK' | 'price'
->;
+type ActionParams = Pick<OrderContext, 'chainId' | 'accounts' | 'price'>;
 
 type Action = (params: ActionParams) => Promise<any>;
 
@@ -114,95 +113,93 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     name: '验证钱包和网络',
     progress: 10,
     action: (context) => {
-      if (
-        !(context.chainId || context.accounts.length || context.metamaskSDK)
-      ) {
+      if (!(context.chainId || context.accounts.length)) {
         return Promise.reject(new Error('钱包或者网络无效'));
       }
       return Promise.resolve({});
     },
     canTransition: (context) => {
-      return context.chainId && context.accounts.length && context.metamaskSDK;
+      return !!(context.chainId && context.accounts.length);
     },
   },
+
   GETTING_TIME: {
     name: '获取区块链时间',
     progress: 20,
-    action: async (context) => {
-      let blockNumber: number | null = null;
-      let blockInfo: any = null;
-      let retryCount = 0;
-      const maxRetries = 3;
-      const retryDelay = 1000; // 1秒
+    action: async (_context) => {
+      try {
+        const publicClient = getPublicClient(wagmiConfig);
 
-      // 重试机制：获取区块号
-      while (retryCount < maxRetries && !blockNumber) {
-        try {
-          blockNumber = await getBlockNumber(context.metamaskSDK);
+        let blockNumber: bigint | null = null;
+        let blockInfo: any = null;
+        let retryCount = 0;
+        const maxRetries = 3;
+        const retryDelay = 1000; // 1秒
 
-          if (blockNumber !== null) {
+        // 重试机制：获取区块号
+        while (retryCount < maxRetries && !blockNumber) {
+          try {
+            blockNumber = (await publicClient?.getBlockNumber()) ?? null;
             break;
+          } catch (error) {
+            console.warn(`获取区块号失败，第 ${retryCount + 1} 次:`, error);
           }
-        } catch (error) {
-          console.warn(`获取区块号失败，第 ${retryCount + 1} 次:`, error);
+
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          }
         }
 
-        retryCount++;
-        if (retryCount < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        if (blockNumber === null) {
+          return Promise.reject(new Error('无法获取区块号，请检查网络连接'));
         }
-      }
 
-      if (blockNumber === null) {
-        return Promise.reject(new Error('无法获取区块号，请检查网络连接'));
-      }
-
-      // 重试机制：获取区块信息
-      retryCount = 0;
-      while (retryCount < maxRetries && !blockInfo) {
-        try {
-          blockInfo = await getBlockInfo(context.metamaskSDK, blockNumber);
-
-          if (blockInfo !== null) {
+        // 重试机制：获取区块信息
+        retryCount = 0;
+        while (retryCount < maxRetries && !blockInfo) {
+          try {
+            blockInfo = await publicClient.getBlock({ blockNumber });
             break;
+          } catch (error) {
+            console.warn(`获取区块信息失败，第 ${retryCount + 1} 次:`, error);
           }
-        } catch (error) {
-          console.warn(`获取区块信息失败，第 ${retryCount + 1} 次:`, error);
+
+          retryCount++;
+          if (retryCount < maxRetries) {
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          }
         }
 
-        retryCount++;
-        if (retryCount < maxRetries) {
-          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+        if (blockInfo === null) {
+          return Promise.reject(new Error('无法获取区块信息，请检查网络连接'));
         }
+
+        // 计算时间
+        const chainTime = BigInt(blockInfo.timestamp);
+
+        // 计算有效期
+        const validUntil = chainTime + BigInt(3600);
+
+        // 计算创建时间
+        const createAT = chainTime;
+
+        const result = {
+          blockNumber: Number(blockNumber),
+          chainTime,
+          validUntil,
+          createAT,
+        };
+        return result;
+      } catch (error) {
+        return Promise.reject(new Error(`获取区块链时间失败: ${error}`));
       }
-
-      if (blockInfo === null) {
-        return Promise.reject(new Error('无法获取区块信息，请检查网络连接'));
-      }
-
-      // 计算时间
-      const chainTime = BigInt(
-        blockInfo?.timestamp ?? Math.floor(Date.now() / 1000)
-      );
-
-      // 计算有效期
-      const validUntil = chainTime + BigInt(3600);
-
-      // 计算创建时间
-      const createAT = chainTime;
-
-      const result = {
-        blockNumber,
-        chainTime,
-        validUntil,
-        createAT,
-      };
-      return result;
     },
     canTransition: (context) => {
-      return context.chainId && context.accounts.length && context.metamaskSDK;
+      return !!(context.chainId && context.accounts.length);
     },
   },
+
   GETTING_NONCE: {
     name: '获取合约Nonce',
     progress: 30,
@@ -210,33 +207,21 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
       try {
         // 1. 获取 ABI
         const nftOrder = findAbiByContractName('nft-order-manager');
-
         if (!nftOrder) {
           throw new Error('无法获取合约 ABI');
         }
 
-        // 2. 创建合约实例
-        const nftOrderContract = await createContractInstance(
-          context.metamaskSDK,
-          {
-            chainId: context.chainId || 0,
-            abi: assertAbi(nftOrder),
-            contractAddress: addressMap.contractAddress,
-          }
+        // 2. 创建合约配置
+        const contractConfig = createContractConfig(
+          addressMap.contractAddress,
+          nftOrder,
+          context.chainId || 0
         );
 
-        if (!nftOrderContract) {
-          throw new Error('合约实例创建失败');
-        }
+        // 3. 使用 readContractData 读取 nonce
+        const nonce = await readContractData(contractConfig, 'getNonce');
 
-        // 3. 获取 nonce
-
-        const nonce = await getNftOrderNonce(
-          nftOrderContract,
-          context.accounts
-        );
-
-        if (nonce === null) {
+        if (nonce === null || nonce === undefined) {
           throw new Error('获取合约Nonce失败');
         }
 
@@ -247,6 +232,7 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     },
     canTransition: (context) => !!(context.blockNumber && context.chainTime),
   },
+
   CREATING_MESSAGE: {
     name: '创建签名信息',
     progress: 40,
@@ -291,12 +277,16 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     name: '等待用户签名',
     progress: 50,
     action: async (context) => {
-      const { signEIP712 } = useWalletAccountsStore.getState();
+      const { signTypedDataAsync, signEIP712 } =
+        useWalletAccountsStore.getState();
       if (!context.typedData) {
         throw new Error('缺少typedData，无法进行签名');
       }
       try {
-        const signature = await signEIP712(context.typedData);
+        const signature = await signEIP712(
+          context.typedData,
+          signTypedDataAsync
+        );
         return Promise.resolve({ signature });
       } catch (error) {
         return Promise.reject(error);
@@ -311,27 +301,44 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     name: '授权NFT合约',
     progress: 70,
     action: async (context) => {
-      const erc721Abi = findAbiByContractName('721');
-      const contract = await createContractInstance(context.metamaskSDK, {
-        contractAddress: addressMap.nftContractAddress,
-        abi: assertAbi(erc721Abi),
-        chainId: context.chainId || 0,
-      });
-
-      if (contract) {
-        const receiptResult = await sendApprove(
-          contract,
-          addressMap.approveAddress
-        );
-
-        if (!receiptResult) {
-          return Promise.reject(new Error('授权NFT合约失败'));
+      try {
+        // 1. 获取 ERC721 ABI
+        const erc721Abi = findAbiByContractName('721');
+        if (!erc721Abi) {
+          throw new Error('无法获取 ERC721 ABI');
         }
 
-        return Promise.resolve({});
-      }
+        // 2. 创建合约配置
+        const contractConfig = createContractConfig(
+          addressMap.nftContractAddress,
+          assertAbi(erc721Abi),
+          context.chainId || 0
+        );
 
-      return Promise.resolve({});
+        // 3. 检查合约是否可用
+        const isAvailable = await checkContractAvailability(contractConfig);
+        if (!isAvailable) {
+          throw new Error('NFT 合约不可用');
+        }
+
+        // 4. 执行授权操作
+        const result = await writeContractData(
+          contractConfig,
+          'approve',
+          [addressMap.approveAddress, 10] // 假设 tokenId 是 10
+        );
+
+        if (!result) {
+          throw new Error('授权NFT合约失败');
+        }
+
+        console.log('授权成功，交易哈希:', result.hash);
+        console.log('交易收据:', result.receipt);
+
+        return Promise.resolve({});
+      } catch (error) {
+        return Promise.reject(new Error(`授权NFT合约失败: ${error}`));
+      }
     },
     canTransition: (context) => !!context.signature,
   },

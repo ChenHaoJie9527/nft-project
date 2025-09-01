@@ -7,7 +7,7 @@ import {
 } from '@/constants';
 import { findAbiByContractName } from '@/lib/abi-utils';
 import { assertAbi } from '@/lib/assert-abi';
-import { createContractInstance } from '@/lib/contract-utils';
+// import { createContractInstance } from '@/lib/contract-utils';
 import { createSendParams } from '@/lib/create-send-params';
 import { createEIP712Message } from '@/lib/eip712-utils';
 import { getBlockInfo } from '@/lib/get-block-info';

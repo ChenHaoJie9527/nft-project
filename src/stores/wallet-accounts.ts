@@ -1,4 +1,3 @@
-import type { MetaMaskSDK } from '@metamask/sdk';
 import { ethers } from 'ethers';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -8,14 +7,13 @@ import type { EIP712Message } from '@/types';
 const ONE_DAY = 24 * 60 * 60 * 1000;
 
 type WalletAccountsState = {
-  // 基础数据
+  // 基础数据 - 现在从wagmi获取，这里作为缓存
   accounts: string[];
-  // MetaMask 状态
-  metamaskSDK: MetaMaskSDK | null;
+  // 网络状态 - 现在从wagmi获取，这里作为缓存
+  chainId: number | null;
+  // 错误状态
   error: Error | null;
   loading: boolean;
-  // 网络状态
-  chainId: number | null;
   // 持久化相关
   lastConnectedAt: number | null;
   autoConnect: boolean;
@@ -23,25 +21,32 @@ type WalletAccountsState = {
   lastEIP712SignatureResult: ethers.Signature | null;
   // 个人消息签名
   lastPersonalSignatureResult: string;
+  // 签名函数 - 不持久化
+  signTypedDataAsync: any | null;
+  signMessageAsync: any | null;
   // 方法
   setAccounts: (accounts: string[]) => void;
-  setMetamaskSDK: (sdk: MetaMaskSDK) => void;
   setError: (error: Error | null) => void;
   setLoading: (loading: boolean) => void;
   setAutoConnect: (enabled: boolean) => void;
   setChainId: (chainId: number) => void;
-  // 连接方法
-  connect: () => Promise<void>;
-  disconnect: () => Promise<void>;
+  setSignTypedDataAsync: (fn: any) => void;
+  setSignMessageAsync: (fn: any) => void;
   // 工具方法
   truncateAddress: (address: string, start?: number, end?: number) => string;
   getPrimaryAddress: () => string;
   isConnected: () => boolean;
   canAutoConnect: () => boolean;
   getCurrentChainId: () => Promise<number | null>;
-  // 签名方法
-  signEIP712: (message: EIP712Message) => Promise<ethers.Signature | null>;
-  signPersonalMessage: (message: string) => Promise<string>;
+  // 签名方法 - 需要外部传入wagmi的签名函数
+  signEIP712: (
+    message: EIP712Message,
+    signTypedDataAsync: any
+  ) => Promise<ethers.Signature | null>;
+  signPersonalMessage: (
+    message: string,
+    signMessageAsync: any
+  ) => Promise<string>;
   clearSignatureResult: () => void;
 };
 
@@ -50,7 +55,6 @@ export const useWalletAccountsStore = create<WalletAccountsState>()(
     (set, get) => ({
       // 初始状态
       accounts: [],
-      metamaskSDK: null,
       error: null,
       loading: false,
       chainId: null,
@@ -58,87 +62,22 @@ export const useWalletAccountsStore = create<WalletAccountsState>()(
       autoConnect: true,
       lastEIP712SignatureResult: null,
       lastPersonalSignatureResult: '',
+      signTypedDataAsync: null,
+      signMessageAsync: null,
 
       // 设置方法
       setAccounts: (accounts) => set({ accounts }),
-      setMetamaskSDK: (sdk) => set({ metamaskSDK: sdk }),
       setError: (error) => set({ error }),
       setLoading: (loading) => set({ loading }),
       setAutoConnect: (enabled) => set({ autoConnect: enabled }),
       setChainId: (chainId) => set({ chainId }),
+      setSignTypedDataAsync: (fn) => set({ signTypedDataAsync: fn }),
+      setSignMessageAsync: (fn) => set({ signMessageAsync: fn }),
 
-      // 获取当前链ID
-      getCurrentChainId: async () => {
-        const { metamaskSDK } = get();
-        if (!metamaskSDK) {
-          return null;
-        }
-
-        try {
-          const ethereum = metamaskSDK.getProvider();
-          if (!ethereum) {
-            return null;
-          }
-
-          const chainId = await ethereum.request({ method: 'eth_chainId' });
-          const chainIdNumber = Number.parseInt(chainId as string, 16); // 转换为十进制
-
-          // 更新store中的chainId
-          set({ chainId: chainIdNumber });
-
-          return chainIdNumber;
-        } catch (err) {
-          console.error('获取链ID失败:', err);
-          return null;
-        }
-      },
-
-      // 连接方法
-      connect: async () => {
-        const { metamaskSDK, getCurrentChainId } = get();
-        if (!metamaskSDK) {
-          return;
-        }
-
-        set({ loading: true, error: null });
-
-        try {
-          const accounts = await metamaskSDK.connect();
-
-          // 连接成功后获取当前链ID
-          const chainId = await getCurrentChainId();
-
-          set({
-            accounts,
-            chainId,
-            loading: false,
-            lastConnectedAt: Date.now(),
-          });
-        } catch (err) {
-          set({ error: err as Error, loading: false });
-        }
-      },
-
-      // 断开连接
-      disconnect: async () => {
-        const { metamaskSDK } = get();
-        if (!metamaskSDK) {
-          return;
-        }
-
-        set({ loading: true, error: null });
-
-        try {
-          await metamaskSDK.disconnect();
-          set({
-            accounts: [],
-            chainId: null,
-            loading: false,
-            lastConnectedAt: null,
-          });
-        } catch (err) {
-          set({ error: err as Error, loading: false });
-        }
+      // 获取当前链ID - 现在从store中获取缓存的chainId
+      getCurrentChainId: () => {
+        const { chainId } = get();
+        return Promise.resolve(chainId || null);
       },
 
       // 工具方法
@@ -170,48 +109,30 @@ export const useWalletAccountsStore = create<WalletAccountsState>()(
         return timeSinceLastConnect < ONE_DAY;
       },
 
-      // 发起EIP712签名（使用 MetaMask SDK）
-      signEIP712: async (typedData) => {
-        const { metamaskSDK, accounts, getCurrentChainId } = get();
-
-        if (!metamaskSDK) {
-          throw new Error('Metamask SDK not initialized');
-        }
+      // 发起EIP712签名（使用 wagmi）
+      signEIP712: async (typedData, signTypedDataAsync) => {
+        const { accounts } = get();
 
         if (accounts.length === 0) {
           throw new Error('No accounts found');
         }
 
+        if (!signTypedDataAsync) {
+          throw new Error('signTypedDataAsync function not provided');
+        }
+
         set({ loading: true, error: null });
 
         try {
-          // 获取当前链ID并更新typedData
-          const currentChainId = await getCurrentChainId();
-          if (currentChainId && typedData.domain.chainId !== currentChainId) {
-            typedData.domain.chainId = currentChainId;
-          }
-
-          // 获取ethereum provider
-          const ethereum = metamaskSDK.getProvider();
-
-          if (!ethereum) {
-            throw new Error('Ethereum provider not available');
-          }
-
-          const provider = new ethers.BrowserProvider(ethereum);
-          const signer = await provider.getSigner();
-
-          const signature = await signer.signTypedData(
-            typedData.domain,
-            typedData.types,
-            typedData.message
-          );
+          // 使用wagmi的签名方法
+          const signature = await signTypedDataAsync({
+            domain: typedData.domain,
+            types: typedData.types,
+            primaryType: 'Order',
+            message: typedData.message,
+          });
 
           const sig = ethers.Signature.from(signature);
-
-          // 解析签名
-          // const signatureResult = parseEIP712Signature(signature as string);
-          // console.log('signatureResult:', signatureResult);
 
           set({
             loading: false,
@@ -225,33 +146,23 @@ export const useWalletAccountsStore = create<WalletAccountsState>()(
         }
       },
 
-      // 发起个人消息签名（使用 MetaMask SDK）
-      signPersonalMessage: async (message: string) => {
-        const { metamaskSDK, accounts } = get();
-
-        if (!metamaskSDK) {
-          throw new Error('Metamask SDK not initialized');
-        }
+      // 发起个人消息签名（使用 wagmi）
+      signPersonalMessage: async (message: string, signMessageAsync) => {
+        const { accounts } = get();
 
         if (accounts.length === 0) {
           throw new Error('No accounts found');
         }
 
+        if (!signMessageAsync) {
+          throw new Error('signMessageAsync function not provided');
+        }
+
         set({ loading: true, error: null });
 
         try {
-          // 获取ethereum provider
-          const ethereum = metamaskSDK.getProvider();
-
-          if (!ethereum) {
-            throw new Error('Ethereum provider not available');
-          }
-
-          // 发起个人消息签名请求
-          const signature = await ethereum.request({
-            method: 'personal_sign',
-            params: [message, accounts[0]],
-          });
+          // 使用wagmi的签名方法
+          const signature = await signMessageAsync({ message });
 
           // 解析签名
           const signatureResult = parsePersonalSignature(signature);
