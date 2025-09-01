@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from '@/components/main-layout';
-import { WagmiConfigProvider } from '@/providers/wagmiConfigProvider';
+import { QueryProvider } from '@/providers/query-provider';
+import { WagmiComponentProvider } from '@/providers/wagmi-provder';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -29,9 +30,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <WagmiConfigProvider>
-          <MainLayout>{children}</MainLayout>
-        </WagmiConfigProvider>
+        <QueryProvider>
+          <WagmiComponentProvider>
+            <MainLayout>{children}</MainLayout>
+          </WagmiComponentProvider>
+        </QueryProvider>
       </body>
     </html>
   );
