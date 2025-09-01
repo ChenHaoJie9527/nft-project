@@ -1,15 +1,14 @@
 'use client';
 
-import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useState } from 'react';
+// import { useMetamask } from '@/hooks/use-metamask';
 import { Button } from '@/components/ui/button';
 import { useClientEffect } from '@/hooks/use-client-effect';
-// import { useMetamask } from '@/hooks/use-metamask';
+import WalletConnectButton from '../wallet-connect-button';
 
 export default function ActionButton() {
   // const { connect, disconnect, loading, isConnected } = useMetamask();
   const [mounted, setMounted] = useState(false);
-  const { openConnectModal } = useConnectModal();
 
   useClientEffect(() => {
     setMounted(true);
@@ -34,15 +33,7 @@ export default function ActionButton() {
       <Button className="" size="sm" variant="ghost">
         菜单
       </Button>
-      <Button
-        onClick={() => {
-          openConnectModal?.();
-        }}
-        size="sm"
-        variant="outline"
-      >
-        连接钱包
-      </Button>
+      <WalletConnectButton />
     </div>
   );
 }

@@ -1,20 +1,137 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
+import { AlertTriangle, ChevronDown, Wallet } from 'lucide-react';
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 export default function WalletConnectButton() {
   return (
-    <ConnectButton
-      accountStatus={{
-        smallScreen: 'avatar',
-        largeScreen: 'full',
+    <ConnectButton.Custom>
+      {({
+        account,
+        chain,
+        openConnectModal,
+        openChainModal,
+        openAccountModal,
+        authenticationStatus,
+        mounted,
+      }) => {
+        const ready = mounted && authenticationStatus !== 'loading';
+        const connected =
+          ready &&
+          account &&
+          chain &&
+          (!authenticationStatus || authenticationStatus === 'authenticated');
+
+        if (!ready) {
+          return (
+            <div
+              aria-hidden
+              className="pointer-events-none select-none opacity-0"
+            >
+              <Button disabled variant="outline">
+                <Wallet className="h-4 w-4" />
+                连接钱包
+              </Button>
+            </div>
+          );
+        }
+
+        if (!connected) {
+          return (
+            <Button onClick={openConnectModal} variant="outline">
+              <Wallet className="h-4 w-4" />
+              连接钱包
+            </Button>
+          );
+        }
+
+        if (chain.unsupported) {
+          return (
+            <Button onClick={openChainModal} variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              网络错误
+            </Button>
+          );
+        }
+
+        return (
+          <div className="flex items-center gap-2">
+            {/* 网络选择按钮 */}
+            <Button
+              className="flex min-h-10 items-center gap-2"
+              onClick={openChainModal}
+              size="sm"
+              variant="outline"
+            >
+              {chain.hasIcon && (
+                <div
+                  className="h-4 w-4 flex-shrink-0 overflow-hidden rounded-full"
+                  style={{
+                    background: chain.iconBackground,
+                  }}
+                >
+                  {chain.iconUrl && (
+                    <Image
+                      alt={chain.name ?? 'Chain icon'}
+                      className="h-full w-full object-cover"
+                      height={16}
+                      src={chain.iconUrl}
+                      width={16}
+                    />
+                  )}
+                </div>
+              )}
+              <span className="hidden sm:inline">{chain.name}</span>
+              <ChevronDown className="h-3 w-3" />
+            </Button>
+
+            {/* 账户信息按钮 */}
+            <Button
+              className="flex min-h-10 items-center gap-2"
+              onClick={openAccountModal}
+              variant="outline"
+            >
+              <div className="flex items-center gap-2">
+                {/* 账户头像 */}
+                {account.ensAvatar ? (
+                  <Image
+                    alt="ENS Avatar"
+                    className="h-5 w-5 rounded-full"
+                    src={account.ensAvatar}
+                  />
+                ) : (
+                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-purple-600">
+                    <span className="font-medium text-white text-xs">
+                      {account.displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                )}
+
+                {/* 账户信息 */}
+                <div className="hidden flex-col items-start sm:flex">
+                  <span className="font-medium text-sm">
+                    {account.displayName}
+                  </span>
+                  {account.displayBalance && (
+                    <span className="text-muted-foreground text-xs">
+                      {account.displayBalance}
+                    </span>
+                  )}
+                </div>
+
+                {/* 移动端显示 */}
+                <div className="sm:hidden">
+                  <span className="font-medium text-sm">
+                    {account.displayName}
+                  </span>
+                </div>
+              </div>
+            </Button>
+          </div>
+        );
       }}
-      chainStatus="name"
-      label="连接钱包"
-      showBalance={{
-        smallScreen: false,
-        largeScreen: true,
-      }}
-    />
+    </ConnectButton.Custom>
   );
 }
