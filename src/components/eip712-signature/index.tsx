@@ -1,13 +1,13 @@
 'use client';
 
-import { ethers } from 'ethers';
+import { waitForTransactionReceipt, writeContract } from '@wagmi/core';
 import { useEffect, useState } from 'react';
+import { wagmiConfig } from '@/configs/wagmi-config';
 import { addressMap } from '@/constants';
 import { useClient } from '@/hooks/use-client';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWagmiWallet } from '@/hooks/use-wagmi-wallet';
 import { findAbiByContractName } from '@/lib/abi-utils';
-import { assertAbi } from '@/lib/assert-abi';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
@@ -38,11 +38,11 @@ export default function EIP712Signature() {
     }
   }, [context.orderData]);
 
-  // useEffect(() => {
-  //   if (buyContext.orderData) {
-  //     setBuyOrderData(buyContext.orderData);
-  //   }
-  // }, [buyContext.orderData]);
+  useEffect(() => {
+    if (buyContext.orderData) {
+      setBuyOrderData(buyContext.orderData);
+    }
+  }, [buyContext.orderData]);
 
   const handleEIP712Sign = async () => {
     try {
@@ -68,7 +68,6 @@ export default function EIP712Signature() {
       await startBuyOrder({
         chainId,
         accounts,
-        metamaskSDK,
         price,
       });
     } catch (_err) {
@@ -81,10 +80,6 @@ export default function EIP712Signature() {
 
   const onMatchClick = async () => {
     console.log('onMatchClick');
-    if (!metamaskSDK) {
-      console.error('请先连接钱包');
-      return;
-    }
 
     if (!chainId) {
       console.error('请先选择网络');
@@ -93,130 +88,68 @@ export default function EIP712Signature() {
     console.log('orderData', orderData);
     console.log('buyOrderData', buyOrderData);
 
-    // 检查是否有完整的订单数据
     if (
       !(orderData && buyOrderData) ||
       Object.keys(orderData).length === 0 ||
       Object.keys(buyOrderData).length === 0
     ) {
+      // 检查是否有完整的订单数据
       console.error('请先创建卖单和买单');
       return;
     }
 
     try {
+      // 使用 wagmi 的方式执行合约调用
       const nftOrderAbi = findAbiByContractName('nft-order-manager');
-      const nftOrderContract = await createContractInstance(metamaskSDK, {
-        chainId,
-        abi: assertAbi(nftOrderAbi),
-        contractAddress: addressMap.contractAddress,
+
+      if (!nftOrderAbi) {
+        throw new Error('无法获取合约 ABI');
+      }
+
+      // 准备合约调用参数
+      const sellInput = {
+        order: orderData.order,
+        v: orderData.v,
+        r: orderData.r,
+        s: orderData.s,
+        extraSignature: orderData.extraSignature,
+        signatureVersion: orderData.signatureVersion,
+        blockNumber: orderData.blockNumber,
+      };
+
+      const buyInput = {
+        order: buyOrderData.order,
+        v: buyOrderData.v,
+        r: buyOrderData.r,
+        s: buyOrderData.s,
+        extraSignature: buyOrderData.extraSignature,
+        signatureVersion: buyOrderData.signatureVersion,
+        blockNumber: buyOrderData.blockNumber,
+      };
+
+      // 买单需要发送ETH
+      const buyPrice = buyOrderData.order.price;
+
+      // 使用 wagmi 的 writeContract 执行交易
+      const executeTx = await writeContract(wagmiConfig, {
+        address: addressMap.contractAddress as `0x${string}`,
+        abi: nftOrderAbi,
+        functionName: 'execute',
+        args: [sellInput, buyInput],
+        value: BigInt(buyPrice),
       });
 
-      if (nftOrderContract) {
-        const sellInput = {
-          order: orderData.order,
-          v: orderData.v,
-          r: orderData.r,
-          s: orderData.s,
-          extraSignature: orderData.extraSignature,
-          signatureVersion: orderData.signatureVersion,
-          blockNumber: orderData.blockNumber,
-        };
+      console.log('撮合交易已发送:', executeTx);
 
-        const buyInput = {
-          order: buyOrderData.order,
-          v: buyOrderData.v,
-          r: buyOrderData.r,
-          s: buyOrderData.s,
-          extraSignature: buyOrderData.extraSignature,
-          signatureVersion: buyOrderData.signatureVersion,
-          blockNumber: buyOrderData.blockNumber,
-        };
-        // 买单需要发送ETH
-        const buyPrice = buyOrderData.order.price;
-        console.log('准备执行撮合交易');
-        console.log('卖单输入:', sellInput);
-        console.log('买单输入:', buyInput);
-        console.log('买单价格 (wei):', buyPrice);
-
-        const executeTx = await nftOrderContract.execute(sellInput, buyInput, {
-          value: buyPrice,
-        });
-
-        // console.log('撮合交易已发送:', executeTx.hash);
-        const receipt = await executeTx.wait();
-        console.log('撮合交易成功', receipt);
-      }
+      // 等待交易确认
+      const receipt = await waitForTransactionReceipt(wagmiConfig, {
+        hash: executeTx,
+      });
+      console.log('撮合交易成功', receipt);
     } catch (err) {
       console.error('发起撮合交易失败:', err);
     }
   };
-
-  // 获取订单hash，通过合约方法_hashOrder
-  const onGetOrderHash = async () => {
-    if (!metamaskSDK) {
-      console.error('请先连接钱包');
-      return;
-    }
-
-    if (!chainId) {
-      console.error('请先选择网络');
-      return;
-    }
-
-    const nftOrderAbi = findAbiByContractName('nft-order-manager');
-    const nftOrderContract = await createContractInstance(metamaskSDK, {
-      chainId,
-      abi: assertAbi(nftOrderAbi),
-      contractAddress: addressMap.contractAddress,
-    });
-
-    if (nftOrderContract) {
-      try {
-        const orderHash = await nftOrderContract._hashOrder(
-          orderData.order,
-          orderData.order.nonce
-        );
-        console.log('订单hash:', orderHash);
-        const domainHash = await getDomainHash();
-        console.log('domainHash1:', domainHash);
-        const domain = {
-          name: 'XY',
-          version: '1.0',
-          chainId,
-          verifyingContract: addressMap.contractAddress, // 智能合约地址
-        };
-        const hash = ethers.TypedDataEncoder.hashDomain(domain);
-        console.log('domainHash2:', hash);
-      } catch (err) {
-        console.error('获取订单hash失败:', err);
-      }
-    }
-  };
-
-  async function getDomainHash() {
-    if (!metamaskSDK) {
-      console.error('请先连接钱包');
-      return;
-    }
-
-    if (!chainId) {
-      console.error('请先选择网络');
-      return;
-    }
-
-    const nftOrderAbi = findAbiByContractName('nft-order-manager');
-    const nftOrderContract = await createContractInstance(metamaskSDK, {
-      chainId,
-      abi: assertAbi(nftOrderAbi),
-      contractAddress: addressMap.contractAddress,
-    });
-
-    if (nftOrderContract) {
-      const domainHash = await nftOrderContract.getDOMAIN_SEPARATOR();
-      return domainHash;
-    }
-    return null;
-  }
 
   return (
     <div className="flex w-full flex-col">
@@ -548,6 +481,7 @@ export default function EIP712Signature() {
           </div>
         </div>
       </div>
+      <Button onClick={onMatchClick}>撮合交易</Button>
       {error && (
         <div className="text-red-500 text-sm">错误: {error.message}</div>
       )}

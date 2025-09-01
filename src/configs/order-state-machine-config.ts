@@ -7,7 +7,6 @@ import {
   orderSideMap,
 } from '@/constants';
 import { findAbiByContractName } from '@/lib/abi-utils';
-import { assertAbi } from '@/lib/assert-abi';
 import {
   checkContractAvailability,
   createContractConfig,
@@ -311,7 +310,7 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
         // 2. 创建合约配置
         const contractConfig = createContractConfig(
           addressMap.nftContractAddress,
-          assertAbi(erc721Abi),
+          erc721Abi,
           context.chainId || 0
         );
 

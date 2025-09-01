@@ -1,4 +1,5 @@
-import { ethers } from 'ethers';
+import { getPublicClient } from '@wagmi/core';
+import { parseEther, zeroAddress } from 'viem'; // 替换 ethers
 import {
   addressMap,
   assetTypeMap,
@@ -6,15 +7,12 @@ import {
   orderSideMap,
 } from '@/constants';
 import { findAbiByContractName } from '@/lib/abi-utils';
-import { assertAbi } from '@/lib/assert-abi';
-// import { createContractInstance } from '@/lib/contract-utils';
+import { createContractConfig, readContractData } from '@/lib/contract-utils';
 import { createSendParams } from '@/lib/create-send-params';
 import { createEIP712Message } from '@/lib/eip712-utils';
-import { getBlockInfo } from '@/lib/get-block-info';
-import { getBlockNumber } from '@/lib/get-block-number';
-import { getNftOrderNonce } from '@/lib/get-nft-order-nonce';
 import { safeAllExists } from '@/lib/utils';
 import { useWalletAccountsStore } from '@/stores/wallet-accounts';
+import { wagmiConfig } from './wagmi-config';
 
 /**
  * 购买订单状态机状态
@@ -31,12 +29,11 @@ export type BuyOrderState =
   | 'ERROR';
 
 /**
- * 购买订单状态机上下文
+ * 购买订单状态机上下文 - 移除 metamaskSDK
  */
 export type BuyOrderContext = {
   chainId: number | null;
   accounts: string[];
-  metamaskSDK: any;
   price: string;
   blockNumber: number | null;
   chainTime: bigint | null;
@@ -70,10 +67,7 @@ export type BuyOrderStateMachineState = {
   progress: number;
   debugMode: boolean;
   start: (
-    params: Pick<
-      BuyOrderContext,
-      'chainId' | 'accounts' | 'metamaskSDK' | 'price'
-    >
+    params: Pick<BuyOrderContext, 'chainId' | 'accounts' | 'price'>
   ) => Promise<any>;
   reset: () => void;
   getCurrentStep: () => string;
@@ -101,93 +95,89 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       name: '验证钱包和网络',
       progress: 10,
       action: (context) => {
-        if (
-          !(context.chainId || context.accounts.length || context.metamaskSDK)
-        ) {
+        if (!(context.chainId || context.accounts.length)) {
           return Promise.reject(new Error('钱包或者网络无效'));
         }
         return Promise.resolve({});
       },
       canTransition: (context) => {
-        return (
-          context.chainId && context.accounts.length && context.metamaskSDK
-        );
+        return !!(context.chainId && context.accounts.length);
       },
     },
 
     GETTING_TIME: {
       name: '获取区块链时间',
       progress: 20,
-      action: async (context) => {
-        let blockNumber: number | null = null;
-        let blockInfo: any = null;
-        let retryCount = 0;
-        const maxRetries = 3;
-        const retryDelay = 1000;
+      action: async (_context) => {
+        try {
+          const publicClient = getPublicClient(wagmiConfig);
 
-        // 重试机制：获取区块号
-        while (retryCount < maxRetries && !blockNumber) {
-          try {
-            blockNumber = await getBlockNumber(context.metamaskSDK);
-            if (blockNumber !== null) {
+          let blockNumber: bigint | null = null;
+          let blockInfo: any = null;
+          let retryCount = 0;
+          const maxRetries = 3;
+          const retryDelay = 1000;
+
+          // 重试机制：获取区块号
+          while (retryCount < maxRetries && !blockNumber) {
+            try {
+              blockNumber = (await publicClient?.getBlockNumber()) ?? null;
               break;
+            } catch (_err) {
+              console.warn(`获取区块号失败，第 ${retryCount + 1} 次重试`);
             }
-          } catch (_err) {
-            console.warn(`获取区块号失败，第 ${retryCount + 1} 次重试`);
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
           }
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+
+          if (blockNumber === null) {
+            return Promise.reject(new Error('无法获取区块号，请检查网络连接'));
           }
-        }
 
-        if (blockNumber === null) {
-          return Promise.reject(new Error('无法获取区块号，请检查网络连接'));
-        }
-
-        // 重试机制：获取区块信息
-        retryCount = 0;
-        while (retryCount < maxRetries && !blockInfo) {
-          try {
-            blockInfo = await getBlockInfo(context.metamaskSDK, blockNumber);
-            if (blockInfo !== null) {
+          // 重试机制：获取区块信息
+          retryCount = 0;
+          while (retryCount < maxRetries && !blockInfo) {
+            try {
+              blockInfo = await publicClient.getBlock({ blockNumber });
               break;
+            } catch (_err) {
+              console.warn(`获取区块信息失败，第 ${retryCount + 1} 次重试`);
             }
-          } catch (_err) {
-            console.warn(`获取区块信息失败，第 ${retryCount + 1} 次重试`);
+            retryCount++;
+            if (retryCount < maxRetries) {
+              await new Promise((resolve) => setTimeout(resolve, retryDelay));
+            }
           }
-          retryCount++;
-          if (retryCount < maxRetries) {
-            await new Promise((resolve) => setTimeout(resolve, retryDelay));
+
+          if (blockInfo === null) {
+            return Promise.reject(
+              new Error('无法获取区块信息，请检查网络连接')
+            );
           }
+
+          // 计算时间
+          const chainTime = BigInt(blockInfo.timestamp);
+
+          // 订单有效期
+          const validUntil = chainTime + BigInt(3600);
+
+          // 创建订单时间
+          const createAT = chainTime;
+
+          return Promise.resolve({
+            blockNumber: Number(blockNumber),
+            chainTime,
+            validUntil,
+            createAT,
+          });
+        } catch (error) {
+          return Promise.reject(new Error(`获取区块链时间失败: ${error}`));
         }
-
-        if (blockInfo === null) {
-          return Promise.reject(new Error('无法获取区块信息，请检查网络连接'));
-        }
-
-        // 计算时间
-        const chainTime = BigInt(
-          blockInfo.timestamp ?? Math.floor(Date.now() / 1000)
-        );
-
-        // 订单有效期
-        const validUntil = chainTime + BigInt(3600);
-
-        // 创建订单时间
-        const createAT = chainTime;
-
-        return Promise.resolve({
-          blockNumber,
-          chainTime,
-          validUntil,
-          createAT,
-        });
       },
       canTransition: (context) => {
-        return (
-          context.chainId && context.accounts.length && context.metamaskSDK
-        );
+        return !!(context.chainId && context.accounts.length);
       },
     },
 
@@ -196,27 +186,22 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       progress: 30,
       action: async (context) => {
         try {
+          // 1. 获取 ABI
           const nftOrder = findAbiByContractName('nft-order-manager');
           if (!nftOrder) {
             throw new Error('找不到合约ABI');
           }
 
-          const nftOrderContract = await createContractInstance(
-            context.metamaskSDK,
-            {
-              chainId: context.chainId || 0,
-              abi: assertAbi(nftOrder),
-              contractAddress: addressMap.contractAddress,
-            }
+          // 2. 创建合约配置
+          const contractConfig = createContractConfig(
+            addressMap.contractAddress,
+            nftOrder,
+            context.chainId || 0
           );
-          if (!nftOrderContract) {
-            throw new Error('合约实例创建失败');
-          }
 
-          const nonce = await getNftOrderNonce(
-            nftOrderContract,
-            context.accounts
-          );
+          // 3. 使用 readContractData 读取 nonce
+          const nonce = await readContractData(contractConfig, 'getNonce');
+
           if (nonce === null || nonce === undefined) {
             throw new Error('获取Nonce失败');
           }
@@ -235,7 +220,7 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       name: '创建买单签名信息',
       progress: 40,
       action: (context) => {
-        const ethPrice = ethers.parseEther(context.price);
+        const ethPrice = parseEther(context.price); // 使用 viem.parseEther
         const typedData = createEIP712Message.nftMint({
           chainId: context.chainId || 0,
           contractAddress: addressMap.contractAddress,
@@ -270,14 +255,18 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       name: '等待用户签名买单',
       progress: 50,
       action: async (context) => {
-        const { signEIP712 } = useWalletAccountsStore.getState();
+        const { signTypedDataAsync, signEIP712 } =
+          useWalletAccountsStore.getState();
 
         if (!context.typedData) {
           throw new Error('缺少typedData，无法进行签名');
         }
 
         try {
-          const signature = await signEIP712(context.typedData);
+          const signature = await signEIP712(
+            context.typedData,
+            signTypedDataAsync
+          );
           return Promise.resolve({ signature });
         } catch (_err) {
           return Promise.reject(_err);
@@ -292,7 +281,7 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       name: '构建买单数据',
       progress: 90,
       action: (context) => {
-        const ethPrice = ethers.parseEther(context.price);
+        const ethPrice = parseEther(context.price); // 使用 viem.parseEther
         const sendParams = createSendParams({
           vrs: context.signature || {},
           blockNumber: context.blockNumber || 0,
@@ -307,7 +296,7 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
             tokenId: BigInt(10), // 与卖单一致
             AssetType: assetTypeMap.ERC721,
             amount: BigInt(1),
-            paymentToken: ethers.ZeroAddress,
+            paymentToken: zeroAddress, // 使用 viem.zeroAddress
             price: ethPrice,
             validUntil: context.validUntil || 0,
             createAT: context.createAT || 0,

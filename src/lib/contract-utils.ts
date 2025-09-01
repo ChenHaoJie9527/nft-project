@@ -7,7 +7,6 @@ import {
 } from '@wagmi/core';
 import type { PublicClient, WalletClient } from 'viem';
 import { wagmiConfig } from '@/configs/wagmi-config';
-import type { ABI } from '@/types';
 
 type ContractConfig = {
   contractAddress: string;

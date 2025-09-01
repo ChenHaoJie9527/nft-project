@@ -32,24 +32,6 @@ export function safeSerialize<T>(obj: T): T {
 }
 
 /**
- * 安全地获取对象的字符串表示
- * @param obj 要转换的对象
- * @returns 安全的字符串表示
- */
-export function safeStringify(obj: any): string {
-  try {
-    return JSON.stringify(obj, null, 2);
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('circular')) {
-      // 如果检测到循环引用，返回安全的表示
-      const safeObj = safeSerialize(obj);
-      return JSON.stringify(safeObj, null, 2);
-    }
-    return '[无法序列化的对象]';
-  }
-}
-
-/**
  * 安全地检查值是否存在（将 BigInt(0) 视为有效值）
  * @param value 要检查的值
  * @returns 如果值存在（包括 0n）返回 true，否则返回 false

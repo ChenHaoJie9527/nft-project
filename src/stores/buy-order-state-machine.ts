@@ -27,10 +27,10 @@ export const useBuyOrderStateMachineStore = create<BuyOrderStateMachineState>(
     debugMode: true,
 
     start: async (params) => {
-      const { chainId, accounts, metamaskSDK, price } = params;
+      const { chainId, accounts, price } = params;
 
       set((state) => ({
-        context: { ...state.context, chainId, accounts, metamaskSDK, price },
+        context: { ...state.context, chainId, accounts, price },
         currentState: 'VALIDATING',
         progress: buyOrderStateConfigs.VALIDATING.progress,
       }));
@@ -102,7 +102,6 @@ async function executeBuyOrderStateMachine() {
     }
 
     console.log(`[BuyOrderStateMachine] ${message}`);
-    console.log(`当前状态: ${store.currentState}`);
     console.log('上下文信息:', {
       chainId: internalContext.chainId,
       price: internalContext.price,

@@ -106,7 +106,6 @@ async function executeStateMachine() {
     } // 如果调试模式关闭，直接返回
 
     console.log(`[StateMachine] ${message}`);
-    console.log(`当前状态: ${store.currentState}`);
     console.log('上下文信息:', {
       chainId: internalContext.chainId,
       price: internalContext.price,
@@ -123,7 +122,7 @@ async function executeStateMachine() {
     if (data) {
       console.log('额外数据:', data);
     }
-    console.log('---');
+    console.log('--------------------------------');
   }
 
   try {
