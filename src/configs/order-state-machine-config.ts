@@ -1,5 +1,5 @@
 import { getPublicClient } from '@wagmi/core';
-import { ethers } from 'ethers';
+import { parseEther, zeroAddress } from 'viem';
 import {
   addressMap,
   assetTypeMap,
@@ -237,7 +237,7 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     name: '创建签名信息',
     progress: 40,
     action: (context) => {
-      const ethPrice = ethers.parseEther(context.price);
+      const ethPrice = parseEther(context.price);
       const typedData = createEIP712Message.nftMint({
         chainId: context.chainId || 0,
         contractAddress: addressMap.contractAddress,
@@ -347,7 +347,7 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
     name: '构建卖单数据',
     progress: 90,
     action: (context) => {
-      const ethPrice = ethers.parseEther(context.price);
+      const ethPrice = parseEther(context.price);
       const sendParams = createSendParams({
         vrs: context.signature || {},
         blockNumber: context.blockNumber || 0,
@@ -362,7 +362,7 @@ export const stateConfigs: Record<OrderState, StateConfig> = {
           tokenId: BigInt(10),
           AssetType: assetTypeMap.ERC721,
           amount: BigInt(1),
-          paymentToken: ethers.ZeroAddress,
+          paymentToken: zeroAddress,
           price: ethPrice,
           validUntil: context.validUntil || 0,
           createAT: context.createAT || 0,
