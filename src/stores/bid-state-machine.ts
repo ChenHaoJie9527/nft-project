@@ -71,7 +71,7 @@ export const useBidStateMachineStore = create<BidStateMachineState>(
           depositCompleted: false,
         },
         progress: 0,
-        debugMode: true,
+        debugMode: false,
       }));
     },
 

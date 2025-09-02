@@ -9,7 +9,7 @@ import { Button } from '../ui/button';
 export const NftBidding = () => {
   const { start } = useBidStateMachineStore();
   const { accounts, chainId } = useWagmiWallet();
-  const [bidPrice] = useState<any>('0.002');
+  const [bidPrice] = useState<any>('0.003');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleBid = () => {
