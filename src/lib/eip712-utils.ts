@@ -5,7 +5,7 @@ type NftMint = {
   contractAddress: string;
   order: {
     to: string;
-    tokenId: number;
+    tokenId: number | string | bigint;
     nonce: number;
     side?: 0 | 1; // 0: 卖出, 1: 买入
     matchingPolicy?: string;
@@ -15,6 +15,7 @@ type NftMint = {
     createAT?: string | bigint;
     fees?: Array<{ rate: number; recipient: string }>;
     extraParams?: string;
+    ethPoolContractAddress?: string;
   };
 };
 
@@ -108,15 +109,15 @@ export const createEIP712Message = {
       side: order.side, // 0: 卖出, 1: 买入
       matchingPolicy: order.matchingPolicy,
       nftContract: order.nftContract,
-      tokenId: order.tokenId || '0x',
+      tokenId: order.tokenId || BigInt(0),
       AssetType: 0,
       amount: BigInt(1),
-      paymentToken: '0x0000000000000000000000000000000000000000',
+      paymentToken: order.ethPoolContractAddress, // 必须是eth pool和余地地址
       price: BigInt(order.price ?? 0),
       validUntil: BigInt(order.validUntil ?? 0),
       createAT: BigInt(order.createAT ?? 0),
       fees: order.fees,
-      extraParams: order.extraParams,
+      extraParams: order.extraParams, //#01
       nonce: BigInt(order.nonce),
     },
   }),

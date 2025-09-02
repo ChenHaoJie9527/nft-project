@@ -1,5 +1,6 @@
 // 直接导入ABI文件
 import erc721Abi from '@/abis/721.json' with { type: 'json' };
+import ethPoolAbi from '@/abis/eth-pool.json' with { type: 'json' };
 import nftOrderManagerAbi from '@/abis/nft-order-manager.json' with {
   type: 'json',
 };
@@ -8,6 +9,7 @@ import nftOrderManagerAbi from '@/abis/nft-order-manager.json' with {
 const ABI_MAP = {
   '721': erc721Abi,
   'nft-order-manager': nftOrderManagerAbi,
+  'eth-pool': ethPoolAbi,
 } as const;
 
 // 从ABI_MAP中提取键值类型

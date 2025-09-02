@@ -82,7 +82,7 @@ export async function writeContractData(
   contractConfig: ContractConfig,
   functionName: string,
   args: any[] = [],
-  value?: bigint
+  value?: any
 ): Promise<{ hash: string; receipt: any } | null> {
   try {
     const walletClient = await getWagmiWalletClient(contractConfig.chainId);

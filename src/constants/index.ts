@@ -13,6 +13,9 @@ export const addressMap = {
 
   // NFT合约地址
   nftContractAddress: '0xf717d1C73fc93452E067f2288542604A12295900',
+
+  // 资金池合约地址
+  ethPoolAddress: '0xD7E3A8C772088bc1728f1fdA08a8e07DCd4d479a',
 } as const;
 
 /**
@@ -32,6 +35,7 @@ export const assetTypeMap = {
  */
 export const matchingPolicyMap = {
   default: '0x245ed3Cc6c3A64c04A4f01e630Cca450Bacf99cE',
+  ethPool: '0xA3FDDC2025fC17e4a0B7b16AF5F7423859427607',
 } as const;
 
 /**
