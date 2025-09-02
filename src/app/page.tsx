@@ -1,5 +1,6 @@
 import { CancelOrder } from '@/components/cancel-order';
 import EIP712Signature from '@/components/eip712-signature';
+import { NftBidding } from '@/components/nft-bidding';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import WalletInfo from '@/components/wallet-info';
 
@@ -31,7 +32,9 @@ export default function Home() {
             <CardHeader>
               <CardTitle>NFT出价</CardTitle>
             </CardHeader>
-            <CardContent>123</CardContent>
+            <CardContent>
+              <NftBidding />
+            </CardContent>
           </Card>
         </div>
       </div>
