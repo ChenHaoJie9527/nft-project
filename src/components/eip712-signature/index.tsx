@@ -7,7 +7,7 @@ import { addressMap } from '@/constants';
 import { useClient } from '@/hooks/use-client';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWagmiWallet } from '@/hooks/use-wagmi-wallet';
-import { findAbiByContractName } from '@/lib/abi-utils';
+import { type Abi, findAbiByContractName } from '@/lib/abi-utils';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
@@ -80,75 +80,23 @@ export default function EIP712Signature() {
   };
 
   const onMatchClick = async () => {
-    console.log('onMatchClick');
-
-    if (!chainId) {
-      console.error('请先选择网络');
-      return;
-    }
-    console.log('orderData', orderData);
-    console.log('buyOrderData', buyOrderData);
-
-    if (
-      !(orderData && buyOrderData) ||
-      Object.keys(orderData).length === 0 ||
-      Object.keys(buyOrderData).length === 0
-    ) {
-      // 检查是否有完整的订单数据
-      console.error('请先创建卖单和买单');
-      return;
-    }
-
     try {
-      // 使用 wagmi 的方式执行合约调用
-      const nftOrderAbi = findAbiByContractName('nft-order-manager');
-
-      if (!nftOrderAbi) {
-        throw new Error('无法获取合约 ABI');
-      }
-
-      // 准备合约调用参数
-      const sellInput = {
-        order: orderData.order,
-        v: orderData.v,
-        r: orderData.r,
-        s: orderData.s,
-        extraSignature: orderData.extraSignature,
-        signatureVersion: orderData.signatureVersion,
-        blockNumber: orderData.blockNumber,
-      };
-
-      const buyInput = {
-        order: buyOrderData.order,
-        v: buyOrderData.v,
-        r: buyOrderData.r,
-        s: buyOrderData.s,
-        extraSignature: buyOrderData.extraSignature,
-        signatureVersion: buyOrderData.signatureVersion,
-        blockNumber: buyOrderData.blockNumber,
-      };
-
-      // 买单需要发送ETH
-      const buyPrice = buyOrderData.order.price;
-
-      // 使用 wagmi 的 writeContract 执行交易
       const executeTx = await writeContract(wagmiConfig, {
-        address: addressMap.contractAddress as `0x${string}`,
-        abi: nftOrderAbi,
         functionName: 'execute',
-        args: [sellInput, buyInput],
-        value: BigInt(buyPrice),
+        abi: findAbiByContractName('nft-order-manager') as Abi,
+        address: addressMap.contractAddress,
+        args: [orderData, buyOrderData],
+        value: BigInt(price),
       });
-
-      console.log('撮合交易已发送:', executeTx);
 
       // 等待交易确认
       const receipt = await waitForTransactionReceipt(wagmiConfig, {
         hash: executeTx,
       });
       console.log('撮合交易成功', receipt);
-    } catch (err) {
-      console.error('发起撮合交易失败:', err);
+    } catch (_err) {
+      console.error('撮合交易失败:', _err);
+      setBuyError(_err as string);
     }
   };
 

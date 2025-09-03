@@ -36,6 +36,12 @@ export default function Home() {
               <NftBidding />
             </CardContent>
           </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>NFT卖单</CardTitle>
+            </CardHeader>
+            <CardContent>123</CardContent>
+          </Card>
         </div>
       </div>
     </div>
