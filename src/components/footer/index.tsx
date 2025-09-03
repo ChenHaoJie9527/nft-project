@@ -8,8 +8,13 @@ type FooterProps = {
 
 export default function Footer({ className }: FooterProps) {
   return (
-    <footer className={cn('border-border border-t bg-muted/30', className)}>
-      <div className="mx-auto w-full max-w-[1360px] px-6 py-8">
+    <footer
+      className={cn(
+        'mx-auto w-full border-border border-t bg-muted/30 md:max-w-[1360px] xl:max-w-[1920px]',
+        className
+      )}
+    >
+      <div className="w-full px-6 py-8">
         <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand Section */}
           <div className="space-y-4">

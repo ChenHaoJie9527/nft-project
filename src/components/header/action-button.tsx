@@ -1,9 +1,10 @@
 'use client';
 
-import { Globe, Menu, Moon, Search, ShoppingBag, User } from 'lucide-react';
+import { Globe, Menu, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import WalletConnectButton from '../wallet-connect-button';
 
 export default function ActionButton() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,9 +12,7 @@ export default function ActionButton() {
   return (
     <div className="flex items-center space-x-3">
       {/* 钱包连接按钮 */}
-      <Button className="hidden md:flex" variant="outline">
-        Connect Wallet
-      </Button>
+      <WalletConnectButton />
 
       {/* 功能图标 - 桌面端 */}
       <div className="hidden items-center space-x-2 md:flex">
@@ -28,24 +27,6 @@ export default function ActionButton() {
           type="button"
         >
           <Globe className="h-5 w-5" />
-        </button>
-        <button
-          className="p-2 text-muted-foreground transition-colors hover:text-foreground"
-          type="button"
-        >
-          <Moon className="h-5 w-5" />
-        </button>
-        <button
-          className="p-2 text-muted-foreground transition-colors hover:text-foreground"
-          type="button"
-        >
-          <User className="h-5 w-5" />
-        </button>
-        <button
-          className="p-2 text-muted-foreground transition-colors hover:text-foreground"
-          type="button"
-        >
-          <ShoppingBag className="h-5 w-5" />
         </button>
       </div>
 

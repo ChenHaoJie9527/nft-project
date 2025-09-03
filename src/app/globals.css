@@ -4,20 +4,20 @@
 @theme {
   /* 主色调 */
     --color-primary: hsl(221 83% 53%);      /* 主蓝色 */
-    --color-primary-foreground: hsl(0 0% 100%);
+    --color-primary-foreground: hsl(222 84% 5%); /* 改为黑色，与 --color-foreground 一致 */
     --color-primary-light: hsl(213 94% 68%); /* 浅蓝色 */
     --color-primary-dark: hsl(221 83% 43%);  /* 深蓝色 */
 
   /* 辅助色 */
   --color-secondary: hsl(262 83% 58%);     /* 紫色 */
-  --color-secondary-foreground: hsl(0 0% 100%);
+  --color-secondary-foreground: hsl(222 84% 5%); /* 改为黑色 */
   --color-accent: hsl(43 96% 56%);        /* 黄色 */
-   --color-accent-foreground: hsl(0 0% 100%);
+   --color-accent-foreground: hsl(222 84% 5%); /* 改为黑色 */
    --color-accent-orange: hsl(25 95% 53%); /* 橙色 */
 
    /* 中性色 */
   --color-background: hsl(0 0% 100%);
-  --color-foreground: hsl(222 84% 5%);
+  --color-foreground: hsl(222 84% 5%);    /* 主要文字颜色 - 黑色 */
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(222 84% 5%);
   --color-muted: hsl(210 40% 96%);
@@ -26,11 +26,11 @@
 
   /* 功能色 */
   --color-success: hsl(142 76% 36%);
-  --color-success-foreground: hsl(0 0% 100%);
+  --color-success-foreground: hsl(222 84% 5%); /* 改为黑色 */
   --color-warning: hsl(38 92% 50%);
-  --color-warning-foreground: hsl(0 0% 100%);
+  --color-warning-foreground: hsl(222 84% 5%); /* 改为黑色 */
   --color-destructive: hsl(0 84% 60%);
-  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-destructive-foreground: hsl(222 84% 5%); /* 改为黑色 */
 
   /* 渐变背景 */
   --gradient-primary: linear-gradient(135deg, hsl(221 83% 53%) 0%, hsl(262 83% 58%) 100%);
@@ -85,26 +85,156 @@
   --spacing-4xl: 6rem;     /* 96px */
 }
 
-/* 响应式字体大小 */
+/* 间距实用类 */
 @layer utilities {
+  /* 水平间距 - space-x */
+  .space-x-xs > * + * { margin-left: var(--spacing-xs); }
+  .space-x-sm > * + * { margin-left: var(--spacing-sm); }
+  .space-x-md > * + * { margin-left: var(--spacing-md); }
+  .space-x-lg > * + * { margin-left: var(--spacing-lg); }
+  .space-x-xl > * + * { margin-left: var(--spacing-xl); }
+  .space-x-2xl > * + * { margin-left: var(--spacing-2xl); }
+  .space-x-3xl > * + * { margin-left: var(--spacing-3xl); }
+  .space-x-4xl > * + * { margin-left: var(--spacing-4xl); }
+
+  /* 响应式水平间距 */
+  .space-x-responsive > * + * { 
+    margin-left: var(--spacing-md); /* 默认中等间距 */
+  }
+  
+  @media (min-width: 810px) { /* md */
+    .space-x-responsive > * + * { 
+      margin-left: var(--spacing-lg); /* 中等屏幕使用大间距 */
+    }
+  }
+  
+  @media (min-width: 1024px) { /* lg */
+    .space-x-responsive > * + * { 
+      margin-left: var(--spacing-2xl); /* 大屏幕使用超大间距 */
+    }
+  }
+  
+  @media (min-width: 1280px) { /* xl */
+    .space-x-responsive > * + * { 
+      margin-left: var(--spacing-3xl); /* 超大屏幕使用超大间距 */
+    }
+  }
+
+  @media (min-width: 1920px) { /* 2xl */
+    .space-x-responsive > * + * { 
+      margin-left: var(--spacing-4xl); /* 超大大屏使用超大间距 */
+    }
+  }
+}
+
+/* 响应式字体实用类 */
+@layer utilities {
+  /* 基础字体类 */
+  .font-brand {
+    font-weight: 500; /* 品牌字体权重 */
+  }
+  
+  .font-nav {
+    font-weight: 400; /* 导航字体权重 */
+  }
+
+  /* 响应式标题字体 */
   .text-hero {
     font-size: clamp(2rem, 5vw, var(--font-size-7xl));
     line-height: var(--line-height-tight);
+    font-weight: 700;
   }
   
   .text-title {
     font-size: clamp(1.5rem, 3vw, var(--font-size-5xl));
     line-height: var(--line-height-snug);
+    font-weight: 600;
   }
   
   .text-subtitle {
     font-size: clamp(1.125rem, 2vw, var(--font-size-2xl));
     line-height: var(--line-height-normal);
+    font-weight: 500;
   }
   
   .text-body {
     font-size: clamp(1rem, 1.5vw, var(--font-size-lg));
     line-height: var(--line-height-relaxed);
+    font-weight: 400;
+  }
+
+  /* 响应式字体权重 */
+  .font-responsive {
+    font-weight: 400; /* 默认正常 */
+  }
+  
+  @media (min-width: 640px) { /* sm */
+    .font-responsive {
+      font-weight: 500; /* 小屏幕使用中等 */
+    }
+  }
+  
+  @media (min-width: 768px) { /* md */
+    .font-responsive {
+      font-weight: 600; /* 中等屏幕使用半粗 */
+    }
+  }
+  
+  @media (min-width: 1024px) { /* lg */
+    .font-responsive {
+      font-weight: 700; /* 大屏幕使用粗体 */
+    }
+  }
+
+  /* 响应式字体大小 */
+  .text-responsive-xs {
+    font-size: clamp(0.75rem, 1vw, var(--font-size-sm));
+  }
+  
+  .text-responsive-sm {
+    font-size: clamp(0.875rem, 1.5vw, var(--font-size-base));
+  }
+  
+  .text-responsive-base {
+    font-size: clamp(1rem, 2vw, var(--font-size-lg));
+  }
+  
+  .text-responsive-lg {
+    font-size: clamp(1.125rem, 2.5vw, var(--font-size-xl));
+  }
+  
+  .text-responsive-xl {
+    font-size: clamp(1.25rem, 3vw, var(--font-size-2xl));
+  }
+
+  /* 响应式行高 */
+  .leading-responsive-tight {
+    line-height: var(--line-height-tight);
+  }
+  
+  .leading-responsive-normal {
+    line-height: var(--line-height-normal);
+  }
+  
+  .leading-responsive-relaxed {
+    line-height: var(--line-height-relaxed);
+  }
+
+  /* 响应式字母间距 */
+  .tracking-responsive {
+    letter-spacing: -0.025em; /* 默认紧凑 */
+  }
+  
+  @media (min-width: 768px) { /* md */
+    .tracking-responsive {
+      letter-spacing: -0.02em; /* 中等屏幕稍松 */
+    }
+  }
+  
+  @media (min-width: 1024px) { /* lg */
+    .tracking-responsive {
+      letter-spacing: -0.015em; /* 大屏幕更松 */
+    }
   }
 }
 
@@ -148,11 +278,6 @@
     font-weight: 700;
     line-height: var(--line-height-tight);
     letter-spacing: -0.025em;
-  }
-
-  /* 链接样式 */
-  a {
-    @apply text-primary hover:text-primary-dark transition-colors duration-200;
   }
 
    /* 按钮基础样式 */

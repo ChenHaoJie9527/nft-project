@@ -31,40 +31,51 @@ export default function Header({
 }: HeaderProps) {
   return (
     <header className={cn(headerVariants({ variant }), className)}>
-      <div className="mx-auto flex h-16 w-full max-w-[1360px] items-center justify-between px-6">
+      <div className="mx-auto flex h-16 w-full items-center justify-between px-6 md:max-w-[1360px] xl:max-w-[1920px]">
         {/* Logo/Brand */}
         <div className="flex items-center">
-          <a className="flex items-center space-x-2 lg:mr-6" href="/">
-            <div className="h-8 w-8 rounded-md bg-primary" />
-            <span className="hidden font-bold lg:inline-block">
-              NFT Gallery
+          <Link className="flex items-center space-x-2 lg:mr-6" href="/">
+            <div className="h-8 w-8 rounded-md bg-foreground" />
+            <span className="hidden font-responsive text-responsive-base lg:inline-block">
+              Logo
             </span>
-          </a>
+          </Link>
         </div>
 
         {/* Navigation - 桌面端 */}
-        <nav className="hidden items-center space-x-8 md:flex">
+        <nav className="hidden items-center space-x-responsive md:flex">
           <Link
-            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
+            className="font-responsive text-responsive-sm tracking-responsive"
             href="/explore"
           >
-            探索
+            DiscoGr
           </Link>
           <Link
-            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
+            className="font-responsive text-responsive-sm tracking-responsive"
             href="/collections"
           >
-            合集
+            My Collections
           </Link>
           <Link
-            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
-            href="/create"
+            className="font-responsive text-responsive-sm tracking-responsive"
+            href="/how-to-buy"
           >
-            创建
+            How To Buy
+          </Link>
+          <Link
+            className="font-responsive text-responsive-sm tracking-responsive"
+            href="/road-map"
+          >
+            Road Map
+          </Link>
+          <Link
+            className="font-responsive text-responsive-sm tracking-responsive"
+            href="/team"
+          >
+            Team
           </Link>
         </nav>
 
-        {/* Action Buttons */}
         <ActionButton />
       </div>
     </header>

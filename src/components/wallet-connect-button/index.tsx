@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { AlertTriangle, ChevronDown, Wallet } from 'lucide-react';
+import { AlertTriangle, ChevronDown } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
@@ -66,9 +66,8 @@ export default function WalletConnectButton() {
               aria-hidden
               className="pointer-events-none select-none opacity-0"
             >
-              <Button disabled variant="outline">
-                <Wallet className="h-4 w-4" />
-                连接钱包
+              <Button className="font-brand text-body" disabled variant="link">
+                Connect Wallet
               </Button>
             </div>
           );
@@ -76,9 +75,12 @@ export default function WalletConnectButton() {
 
         if (!connected) {
           return (
-            <Button onClick={openConnectModal} variant="outline">
-              <Wallet className="h-4 w-4" />
-              连接钱包
+            <Button
+              className="font-brand text-body"
+              onClick={openConnectModal}
+              variant="link"
+            >
+              Connect Wallet
             </Button>
           );
         }
@@ -87,7 +89,7 @@ export default function WalletConnectButton() {
           return (
             <Button onClick={openChainModal} variant="destructive">
               <AlertTriangle className="h-4 w-4" />
-              网络错误
+              Network Error
             </Button>
           );
         }
