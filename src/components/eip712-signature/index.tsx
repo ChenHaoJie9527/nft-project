@@ -64,10 +64,12 @@ export default function EIP712Signature() {
   const onBuyClick = async () => {
     try {
       setBuyLoading(true);
+      console.log('orderData', orderData);
       await startBuyOrder({
         chainId,
         accounts,
         price,
+        sellOrderData: orderData,
       });
     } catch (_err) {
       console.error('买单失败:', _err);

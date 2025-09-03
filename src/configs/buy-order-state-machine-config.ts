@@ -10,6 +10,8 @@ import { findAbiByContractName } from '@/lib/abi-utils';
 import { createContractConfig, readContractData } from '@/lib/contract-utils';
 import { createSendParams } from '@/lib/create-send-params';
 import { createEIP712Message } from '@/lib/eip712-utils';
+import { checkUserFunds } from '@/lib/eth-pool-utils';
+import { executeOrderMatching } from '@/lib/execute-order-matching';
 import { safeAllExists } from '@/lib/utils';
 import { useWalletAccountsStore } from '@/stores/wallet-accounts';
 import { wagmiConfig } from './wagmi-config';
@@ -19,6 +21,7 @@ import { wagmiConfig } from './wagmi-config';
  */
 export type BuyOrderState =
   | 'IDLE'
+  | 'CHECKING_FUNDS'
   | 'VALIDATING'
   | 'GETTING_TIME'
   | 'GETTING_NONCE'
@@ -29,7 +32,7 @@ export type BuyOrderState =
   | 'ERROR';
 
 /**
- * 购买订单状态机上下文 - 移除 metamaskSDK
+ * 购买订单状态机上下文
  */
 export type BuyOrderContext = {
   chainId: number | null;
@@ -43,7 +46,11 @@ export type BuyOrderContext = {
   typedData: any | null;
   signature: any | null;
   orderData: any | null;
+  hasEnoughFunds: boolean | null;
+  transactionHash: string | null;
+  transactionStatus: 'pending' | 'confirmed' | 'failed' | null;
   error: string | null;
+  sellOrderData?: any | null;
 };
 
 /**
@@ -67,7 +74,10 @@ export type BuyOrderStateMachineState = {
   progress: number;
   debugMode: boolean;
   start: (
-    params: Pick<BuyOrderContext, 'chainId' | 'accounts' | 'price'>
+    params: Pick<
+      BuyOrderContext,
+      'chainId' | 'accounts' | 'price' | 'sellOrderData'
+    >
   ) => Promise<any>;
   reset: () => void;
   getCurrentStep: () => string;
@@ -91,6 +101,21 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
       canTransition: () => true,
     },
 
+    CHECKING_FUNDS: {
+      name: '检查用户资金',
+      progress: 5,
+      action: async (context) => {
+        try {
+          return await checkUserFunds(context);
+        } catch (error) {
+          return Promise.reject(new Error(`资金检查失败: ${error}`));
+        }
+      },
+      canTransition: (context) => {
+        return !!(context.chainId && context.accounts.length);
+      },
+    },
+
     VALIDATING: {
       name: '验证钱包和网络',
       progress: 10,
@@ -101,7 +126,11 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
         return Promise.resolve({});
       },
       canTransition: (context) => {
-        return !!(context.chainId && context.accounts.length);
+        return !!(
+          context.chainId &&
+          context.accounts.length &&
+          context.hasEnoughFunds
+        );
       },
     },
 
@@ -279,9 +308,9 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
 
     BUILDING_ORDER: {
       name: '构建买单数据',
-      progress: 90,
+      progress: 90, // 调整进度，因为这是最后一步
       action: (context) => {
-        const ethPrice = parseEther(context.price); // 使用 viem.parseEther
+        const ethPrice = parseEther(context.price);
         const sendParams = createSendParams({
           vrs: context.signature || {},
           blockNumber: context.blockNumber || 0,
@@ -290,13 +319,13 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
           order: {
             nonce: context.nonce || 0,
             trader: context.accounts[0] as `0x${string}`,
-            side: orderSideMap.Buy, // 买单
+            side: orderSideMap.Buy,
             matchingPolicy: matchingPolicyMap.default,
             nftContract: addressMap.nftContractAddress,
-            tokenId: BigInt(10), // 与卖单一致
+            tokenId: BigInt(10),
             AssetType: assetTypeMap.ERC721,
             amount: BigInt(1),
-            paymentToken: zeroAddress, // 使用 viem.zeroAddress
+            paymentToken: zeroAddress,
             price: ethPrice,
             validUntil: context.validUntil || 0,
             createAT: context.createAT || 0,
@@ -313,14 +342,49 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
     },
 
     SUCCESS: {
-      name: '订单提交成功',
+      name: '订单构建成功，准备撮合交易',
       progress: 100,
-      action: () => ({}),
-      canTransition: () => true,
+      action: async (context) => {
+        try {
+          // 如果没有挂单数据，说明只是构建订单，不需要撮合
+          if (!context.sellOrderData) {
+            console.log('买单构建完成，等待挂单数据进行撮合');
+            return {};
+          }
+
+          // 如果有挂单数据，执行撮合交易
+          if (!context.chainId) {
+            throw new Error('请选择网络');
+          }
+
+          if (!context.orderData) {
+            throw new Error('缺少买单数据，无法执行撮合');
+          }
+
+          // console.log('开始执行撮合交易...');
+          // console.log('sellOrderData=', context.sellOrderData);
+          // console.log('buyOrderData=', context.orderData);
+
+          // 调用撮合交易方法
+          const result = await executeOrderMatching(
+            context.sellOrderData,
+            context.orderData,
+            context.chainId
+          );
+
+          return result;
+        } catch (error: any) {
+          // 撮合失败不影响订单构建成功，只是记录错误
+          return { error: error.message };
+        }
+      },
+      canTransition: (context) => {
+        return context.orderData && context.sellOrderData; // 只要有订单数据就可以进入成功状态
+      },
     },
 
     ERROR: {
-      name: '订单提交失败',
+      name: '订单构建失败',
       progress: 0,
       action: () => ({}),
       canTransition: () => true,
@@ -328,11 +392,12 @@ export const buyOrderStateConfigs: Record<BuyOrderState, BuyOrderStateConfig> =
   };
 
 /**
- * 状态转换映射
+ * 状态转换映射 - 简化流程
  */
 export const buyOrderStateTransitions: Record<BuyOrderState, BuyOrderState[]> =
   {
-    IDLE: ['VALIDATING'],
+    IDLE: ['CHECKING_FUNDS'],
+    CHECKING_FUNDS: ['VALIDATING', 'ERROR'],
     VALIDATING: ['GETTING_TIME', 'ERROR'],
     GETTING_TIME: ['GETTING_NONCE', 'ERROR'],
     GETTING_NONCE: ['CREATING_MESSAGE', 'ERROR'],

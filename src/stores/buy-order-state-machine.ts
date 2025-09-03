@@ -11,7 +11,6 @@ export const useBuyOrderStateMachineStore = create<BuyOrderStateMachineState>(
     context: {
       chainId: null,
       accounts: [],
-      metamaskSDK: null,
       price: '',
       blockNumber: null,
       chainTime: null,
@@ -22,17 +21,21 @@ export const useBuyOrderStateMachineStore = create<BuyOrderStateMachineState>(
       signature: null,
       orderData: null,
       error: null,
+      hasEnoughFunds: false,
+      transactionHash: null,
+      transactionStatus: null,
+      sellOrderData: null,
     },
     progress: 0,
     debugMode: true,
 
     start: async (params) => {
-      const { chainId, accounts, price } = params;
+      const { chainId, accounts, price, sellOrderData } = params;
 
       set((state) => ({
-        context: { ...state.context, chainId, accounts, price },
-        currentState: 'VALIDATING',
-        progress: buyOrderStateConfigs.VALIDATING.progress,
+        context: { ...state.context, chainId, accounts, price, sellOrderData },
+        currentState: 'CHECKING_FUNDS',
+        progress: buyOrderStateConfigs.CHECKING_FUNDS.progress,
       }));
 
       await executeBuyOrderStateMachine();
@@ -44,7 +47,9 @@ export const useBuyOrderStateMachineStore = create<BuyOrderStateMachineState>(
         context: {
           chainId: null,
           accounts: [],
-          metamaskSDK: null,
+          hasEnoughFunds: false,
+          transactionHash: null,
+          transactionStatus: null,
           price: '',
           blockNumber: null,
           chainTime: null,
@@ -55,9 +60,10 @@ export const useBuyOrderStateMachineStore = create<BuyOrderStateMachineState>(
           signature: null,
           orderData: null,
           error: null,
+          sellOrderData: null,
         },
         progress: 0,
-        debugMode: false,
+        debugMode: true,
       }));
     },
 
@@ -159,6 +165,17 @@ async function executeBuyOrderStateMachine() {
       }
     }
 
+    // 处理 SUCCESS 状态
+    if (currentState === 'SUCCESS') {
+      const config = buyOrderStateConfigs[currentState];
+      const result = await config.action(internalContext);
+      internalContext = { ...internalContext, ...result };
+
+      useBuyOrderStateMachineStore.setState(() => ({
+        context: internalContext,
+      }));
+    }
+
     debugLog('🎉 买单状态机执行完成');
   } catch (error) {
     const safeContext = {
@@ -180,26 +197,42 @@ function getNextBuyOrderState(
   currentState: BuyOrderState,
   result: any
 ): BuyOrderState | null {
+  // 从 IDLE 开始
+  if (currentState === 'IDLE') {
+    return 'CHECKING_FUNDS';
+  }
+
+  // 检查资金后进入验证状态
+  if (currentState === 'CHECKING_FUNDS' && result.hasEnoughFunds !== null) {
+    return 'VALIDATING';
+  }
+
+  // 验证后获取时间
   if (currentState === 'VALIDATING' && !result.error) {
     return 'GETTING_TIME';
   }
 
+  // 获取时间后获取 nonce
   if (currentState === 'GETTING_TIME' && result.chainTime) {
     return 'GETTING_NONCE';
   }
 
+  // 获取 nonce 后创建消息
   if (currentState === 'GETTING_NONCE' && result.nonce !== undefined) {
     return 'CREATING_MESSAGE';
   }
 
+  // 创建消息后进入签名
   if (currentState === 'CREATING_MESSAGE' && result.typedData) {
     return 'SIGNING';
   }
 
+  // 签名后构建订单
   if (currentState === 'SIGNING' && result.signature) {
     return 'BUILDING_ORDER';
   }
 
+  // 构建订单后进入成功状态
   if (currentState === 'BUILDING_ORDER' && result.orderData) {
     return 'SUCCESS';
   }
