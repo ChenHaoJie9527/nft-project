@@ -66,7 +66,11 @@ export default function WalletConnectButton() {
               aria-hidden
               className="pointer-events-none select-none opacity-0"
             >
-              <Button className="font-brand text-body" disabled variant="link">
+              <Button
+                className="font-responsive text-responsive-sm tracking-responsive"
+                disabled
+                variant="link"
+              >
                 Connect Wallet
               </Button>
             </div>
@@ -76,7 +80,7 @@ export default function WalletConnectButton() {
         if (!connected) {
           return (
             <Button
-              className="font-brand text-body"
+              className="font-responsive text-responsive-sm tracking-responsive"
               onClick={openConnectModal}
               variant="link"
             >
