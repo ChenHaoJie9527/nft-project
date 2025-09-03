@@ -1,32 +1,20 @@
-import { cva, type VariantProps } from 'class-variance-authority';
+import { Twitter } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
-const footerVariants = cva('border-border border-t bg-background', {
-  variants: {
-    variant: {
-      default: '',
-    },
-  },
-  defaultVariants: {
-    variant: 'default',
-  },
-});
-
 type FooterProps = {
   className?: string;
-} & React.HTMLAttributes<HTMLDivElement> &
-  VariantProps<typeof footerVariants>;
+};
 
 export default function Footer({ className }: FooterProps) {
   return (
-    <div className={cn(footerVariants({ variant: 'default' }), className)}>
-      <div className="container mx-auto max-w-screen-2xl px-4 py-12">
-        <div className="grid-clos-1 grid gap-8 md:grid-cols-4">
+    <footer className={cn('border-border border-t bg-muted/30', className)}>
+      <div className="mx-auto w-full max-w-[1360px] px-6 py-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand Section */}
           <div className="space-y-4">
             <div className="flex items-center space-x-2">
-              <div className="h-6 w-6 rounded bg-primary" />
+              <div className="h-8 w-8 rounded-md bg-primary" />
               <span className="font-bold">NFT Gallery</span>
             </div>
             <p className="text-muted-foreground text-sm">
@@ -34,85 +22,104 @@ export default function Footer({ className }: FooterProps) {
             </p>
           </div>
 
-          {/* Links Sections */}
+          {/* Quick Links */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm">市场</h4>
-            <ul className="space-y-2 text-muted-foreground text-sm">
+            <h3 className="font-semibold">快速链接</h3>
+            <ul className="space-y-2 text-sm">
               <li>
-                <Link className="hover:text-foreground" href="/explore">
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/explore"
+                >
                   探索
-                </Link>
+                </a>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/collections">
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/collections"
+                >
                   合集
-                </Link>
+                </a>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/trending">
-                  热门
-                </Link>
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/create"
+                >
+                  创建
+                </a>
               </li>
             </ul>
           </div>
 
+          {/* Support */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm">创作者</h4>
-            <ul className="space-y-2 text-muted-foreground text-sm">
+            <h3 className="font-semibold">支持</h3>
+            <ul className="space-y-2 text-sm">
               <li>
-                <Link className="hover:text-foreground" href="/create">
-                  创建NFT
-                </Link>
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/help"
+                >
+                  帮助中心
+                </a>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/dashboard">
-                  创作者面板
-                </Link>
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/contact"
+                >
+                  联系我们
+                </a>
               </li>
               <li>
-                <Link className="hover:text-foreground" href="/help">
-                  帮助文档
-                </Link>
+                <a
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                  href="/terms"
+                >
+                  服务条款
+                </a>
               </li>
             </ul>
           </div>
 
+          {/* Social & Newsletter */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-sm">社区</h4>
-            <ul className="space-y-2 text-muted-foreground text-sm">
-              <li>
-                <Link className="hover:text-foreground" href="/discord">
-                  Discord
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/twitter">
-                  Twitter
-                </Link>
-              </li>
-              <li>
-                <Link className="hover:text-foreground" href="/blog">
-                  博客
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          <div className="mt-8 flex flex-col items-center justify-between border-border border-t pt-8 md:flex-row">
-            <p className="text-muted-foreground text-sm">
-              © 2024 NFT Gallery. 保留所有权利。
-            </p>
-            <div className="mt-4 flex space-x-6 text-muted-foreground text-sm md:mt-0">
-              <Link className="hover:text-foreground" href="/privacy">
-                隐私政策
+            <h3 className="font-semibold">关注我们</h3>
+            <div className="flex space-x-4">
+              <Link
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                href="#"
+              >
+                <span className="sr-only">Twitter</span>
+                <Twitter className="h-5 w-5" />
               </Link>
-              <Link className="hover:text-foreground" href="/terms">
-                服务条款
+              <Link
+                className="text-muted-foreground transition-colors hover:text-foreground"
+                href="#"
+              >
+                <span className="sr-only">Discord</span>
+                <svg
+                  className="h-5 w-5"
+                  fill="currentColor"
+                  title="Discord"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M6.29 18.251c7.547 0 11.675-6.253 11.675-11.675 0-.178 0-.355-.012-.53A8.348 8.348 0 0020 3.92a8.19 8.19 0 01-2.357.646 4.118 4.118 0 001.804-2.27 8.224 8.224 0 01-2.605.996 4.107 4.107 0 00-6.993 3.743 11.65 11.65 0 01-8.457-4.287 4.106 4.106 0 001.27 5.477A4.073 4.073 0 01.8 7.713v.052a4.105 4.105 0 003.292 4.022 4.095 4.095 0 01-1.853.07 4.108 4.108 0 003.834 2.85A8.233 8.233 0 010 16.407a11.616 11.616 0 006.29 1.84" />
+                </svg>
               </Link>
             </div>
           </div>
         </div>
+
+        {/* Bottom Bar */}
+        <div className="mt-8 border-border border-t pt-8 text-center">
+          <p className="text-muted-foreground text-sm">
+            © 2024 NFT Gallery. All rights reserved.
+          </p>
+        </div>
       </div>
-    </div>
+    </footer>
   );
 }

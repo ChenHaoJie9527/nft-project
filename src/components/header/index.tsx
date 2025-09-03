@@ -9,6 +9,8 @@ const headerVariants = cva(
     variants: {
       variant: {
         default: '',
+        transparent: 'border-none bg-transparent',
+        solid: 'border-border bg-background',
       },
     },
     defaultVariants: {
@@ -19,51 +21,52 @@ const headerVariants = cva(
 
 type HeaderProps = {
   className?: string;
+  variant?: 'default' | 'transparent' | 'solid';
 } & React.HTMLAttributes<HTMLHeadElement> &
   VariantProps<typeof headerVariants>;
 
-export default function Header({ className }: HeaderProps) {
+export default function Header({
+  className,
+  variant = 'default',
+}: HeaderProps) {
   return (
-    <div className={cn(headerVariants({ variant: 'default' }), className)}>
-      <div className="container mx-auto flex h-16 max-w-screen-2xl items-center px-4">
+    <header className={cn(headerVariants({ variant }), className)}>
+      <div className="mx-auto flex h-16 w-full max-w-[1360px] items-center justify-between px-6">
         {/* Logo/Brand */}
-        <div className="mr-4 flex">
-          <a className="mr-4 flex items-center space-x-2 lg:mr-6" href="/">
+        <div className="flex items-center">
+          <a className="flex items-center space-x-2 lg:mr-6" href="/">
             <div className="h-8 w-8 rounded-md bg-primary" />
             <span className="hidden font-bold lg:inline-block">
               NFT Gallery
             </span>
           </a>
         </div>
-        {/* Navigation */}
-        <nav className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-          <div className="hidden w-full flex-1 md:w-auto md:flex-none">
-            <div className="flex items-center space-x-6 text-sm">
-              <Link
-                className="text-foreground/60 transition-colors hover:text-foreground/80"
-                href="/explore"
-              >
-                探索
-              </Link>
-              <Link
-                className="text-foreground/60 transition-colors hover:text-foreground/80"
-                href="/collections"
-              >
-                合集
-              </Link>
-              <Link
-                className="text-foreground/60 transition-colors hover:text-foreground/80"
-                href="/create"
-              >
-                创建
-              </Link>
-            </div>
-          </div>
 
-          {/* Action Buttons */}
-          <ActionButton />
+        {/* Navigation - 桌面端 */}
+        <nav className="hidden items-center space-x-8 md:flex">
+          <Link
+            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
+            href="/explore"
+          >
+            探索
+          </Link>
+          <Link
+            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
+            href="/collections"
+          >
+            合集
+          </Link>
+          <Link
+            className="text-foreground/60 text-sm transition-colors hover:text-foreground/80"
+            href="/create"
+          >
+            创建
+          </Link>
         </nav>
+
+        {/* Action Buttons */}
+        <ActionButton />
       </div>
-    </div>
+    </header>
   );
 }
