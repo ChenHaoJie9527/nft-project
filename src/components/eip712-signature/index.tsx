@@ -1,13 +1,10 @@
 'use client';
 
-import { waitForTransactionReceipt, writeContract } from '@wagmi/core';
 import { useEffect, useState } from 'react';
-import { wagmiConfig } from '@/configs/wagmi-config';
-import { addressMap } from '@/constants';
 import { useClient } from '@/hooks/use-client';
 import { useLocalStorage } from '@/hooks/use-local-storage';
 import { useWagmiWallet } from '@/hooks/use-wagmi-wallet';
-import { type Abi, findAbiByContractName } from '@/lib/abi-utils';
+import { executeOrderMatching } from '@/lib/execute-order-matching';
 import { formatAddress } from '@/lib/format-address';
 import { formatBigInt } from '@/lib/format-bigint';
 import { formatTimestamp } from '@/lib/format-timestamp';
@@ -81,18 +78,14 @@ export default function EIP712Signature() {
 
   const onMatchClick = async () => {
     try {
-      const executeTx = await writeContract(wagmiConfig, {
-        functionName: 'execute',
-        abi: findAbiByContractName('nft-order-manager') as Abi,
-        address: addressMap.contractAddress,
-        args: [orderData, buyOrderData],
-        value: BigInt(price),
-      });
-
-      // 等待交易确认
-      const receipt = await waitForTransactionReceipt(wagmiConfig, {
-        hash: executeTx,
-      });
+      if (!chainId) {
+        throw new Error('链ID不能为空');
+      }
+      const receipt = await executeOrderMatching(
+        orderData,
+        buyOrderData,
+        chainId
+      );
       console.log('撮合交易成功', receipt);
     } catch (_err) {
       console.error('撮合交易失败:', _err);
