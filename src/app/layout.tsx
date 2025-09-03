@@ -1,18 +1,24 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Geist } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from '@/components/main-layout';
 import { QueryProvider } from '@/providers/query-provider';
 import { WagmiComponentProvider } from '@/providers/wagmi-provder';
 
 const geistSans = Geist({
-  variable: '--font-geist-sans',
+  variable: '--font-sans',
   subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+  display: 'swap',
+  fallback: [
+    'PingFang SC', // macOS 中文字体
+    'Hiragino Sans GB', // macOS 备选中文字体
+    'Microsoft YaHei', // Windows 中文字体
+    'SimHei', // Windows 备选中文字体
+    'Noto Sans SC', // Google 中文字体
+    'Source Han Sans SC', // Adobe 中文字体
+    'system-ui', // 系统默认字体
+    'sans-serif', // 通用回退
+  ],
 });
 
 export const metadata: Metadata = {
@@ -26,10 +32,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html className={`${geistSans.className} ${geistSans.variable}`} lang="en">
+      <body className={'antialiased'}>
         <QueryProvider>
           <WagmiComponentProvider>
             <MainLayout>{children}</MainLayout>
