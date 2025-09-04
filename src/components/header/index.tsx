@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import ActionButton from './action-button';
 
 const headerVariants = cva(
-  'sticky top-0 z-50 w-full border-border/90 border-b bg-background/95 backdrop-blur transition-transform duration-300 ease-in-out supports-[backdrop-filter]:bg-background/60',
+  'sticky top-0 z-50 w-full bg-background/95 backdrop-blur transition-transform duration-300 ease-in-out supports-[backdrop-filter]:bg-background/60',
   {
     variants: {
       variant: {
