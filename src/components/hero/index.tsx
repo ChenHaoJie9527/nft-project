@@ -1,16 +1,15 @@
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '../ui/button';
+import HeroSubtitle from './hero-subtitle';
 import HeroTitle from './hero-title';
 
 type HeroProps = Partial<{
-  subtitle: string;
   buttonText: string;
   backgroundImage: string;
 }>;
 
 export function Hero({
-  subtitle = "Buy and sell NFTs from the worid's top artists",
   buttonText = 'VIEW COLLECTION',
   backgroundImage = '/hero/hero-bg.webp',
 }: HeroProps) {
@@ -38,7 +37,8 @@ export function Hero({
       {/* 副标题 */}
       <div className="absolute inset-0 top-[25%] left-[5vw] z-10 flex items-center">
         <div className="pr-8 pl-2 md:pl-12">
-          <p className="text-subtitle text-white">{subtitle}</p>
+          {/* <p className="text-subtitle text-white">{subtitle}</p> */}
+          <HeroSubtitle />
         </div>
       </div>
 
