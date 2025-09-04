@@ -141,9 +141,27 @@
 
   /* 响应式标题字体 */
   .text-hero {
-    font-size: clamp(2rem, 5vw, var(--font-size-7xl));
+    font-size: clamp(1vw, 5vw, 4vw);
     line-height: var(--line-height-tight);
     font-weight: 700;
+  }
+
+  @media (min-width: 640px) {
+    .text-hero {
+      font-size: clamp(1vw, 5vw, 4w);
+    }
+  }
+
+  @media (min-width: 768px) {
+    .text-hero {
+      font-size: clamp(1vw, 5vw, 4vw);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .text-hero {
+      font-size: clamp(1vw, 5vw, 3.5vw);
+    }
   }
   
   .text-title {
@@ -153,9 +171,39 @@
   }
   
   .text-subtitle {
-    font-size: clamp(1.125rem, 2vw, var(--font-size-2xl));
+    font-size: clamp(0.7rem, 1vw, var(--font-size-2xl));
     line-height: var(--line-height-normal);
     font-weight: 500;
+  }
+
+  @media (min-width: 640px) {
+    .text-subtitle {
+      font-size: clamp(0.8rem, 1vw, var(--font-size-2xl));
+    }
+  }
+
+  @media (min-width: 768px) {
+    .text-subtitle {
+      font-size: clamp(1rem, 1vw, var(--font-size-2xl));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .text-subtitle {
+      font-size: clamp(1.125rem, 1vw, var(--font-size-2xl));
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .text-subtitle {
+      font-size: clamp(1.5rem, 1vw, var(--font-size-2xl));
+    }
+  }
+
+  @media (min-width: 1920px) {
+    .text-subtitle {
+      font-size: clamp(1.875rem, 1vw, var(--font-size-2xl));
+    }
   }
   
   .text-body {
@@ -193,7 +241,19 @@
   }
   
   .text-responsive-sm {
-    font-size: clamp(0.875rem, 1.5vw, var(--font-size-base));
+    font-size: clamp(1rem, 1vw, 2rem);
+  }
+
+  @media (min-width: 768px) {
+    .text-responsive-sm {
+      font-size: clamp(0.875rem, 1vw, 1.5rem);
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .text-responsive-sm {
+      font-size: clamp(0.8rem, 1vw, 2rem);
+    }
   }
   
   .text-responsive-base {

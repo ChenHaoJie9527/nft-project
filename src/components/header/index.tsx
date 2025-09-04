@@ -49,7 +49,7 @@ export default function Header({
     <header
       className={cn(headerVariants({ variant, hidden: !isVisible }), className)}
     >
-      <div className="mx-auto flex h-16 w-full items-center justify-between px-4 md:max-w-[1360px] md:px-6 xl:max-w-[1920px]">
+      <div className="mx-auto flex h-16 w-full items-center justify-between px-4 md:w-[90vw] md:px-6 lg:w-[90vw] xl:w-[85vw] 2xl:w-[70vw]">
         {/* Logo/Brand */}
         <div className="flex items-center">
           <Link className="flex items-center space-x-2 lg:mr-6" href="/">

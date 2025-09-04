@@ -10,7 +10,7 @@ export function Container({ children, className = '' }: ContainerProps) {
   return (
     <div
       className={cn(
-        'mx-auto w-full px-6 md:max-w-[1360px] xl:max-w-[1920px]',
+        'mx-auto w-full px-6 md:w-[90vw] lg:w-[90vw] xl:w-[85vw] 2xl:w-[70vw]', // 固定左右内边距 24px
         className
       )}
     >
