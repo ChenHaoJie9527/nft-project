@@ -265,7 +265,7 @@
   }
   
   .text-responsive-xl {
-    font-size: clamp(1.25rem, 3vw, var(--font-size-2xl));
+    font-size: clamp(1.25rem, 3vw, var(--font-size-5xl));
   }
 
   /* 响应式行高 */

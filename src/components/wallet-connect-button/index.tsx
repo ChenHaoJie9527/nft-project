@@ -1,7 +1,7 @@
 'use client';
 
 import { ConnectButton } from '@rainbow-me/rainbowkit';
-import { AlertTriangle, ChevronDown } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import Image from 'next/image';
 import { useEffect } from 'react';
 import { useAccount } from 'wagmi';
