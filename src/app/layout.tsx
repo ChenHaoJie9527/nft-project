@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist } from 'next/font/google';
 import './globals.css';
 import { MainLayout } from '@/components/main-layout';
@@ -24,6 +24,14 @@ const geistSans = Geist({
 export const metadata: Metadata = {
   title: 'NFT Gallery - 数字艺术收藏平台',
   description: '发现、收集和交易独特的数字艺术作品',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  minimumScale: 1,
+  userScalable: false,
 };
 
 export default function RootLayout({

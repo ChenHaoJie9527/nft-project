@@ -1,6 +1,6 @@
 'use client';
 
-import { Globe, Menu, Search } from 'lucide-react';
+import { Globe, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -31,13 +31,13 @@ export default function ActionButton() {
       </div>
 
       {/* 移动端汉堡菜单 */}
-      <button
+      {/* <button
         className="p-2 md:hidden"
         onClick={() => setIsMenuOpen(!isMenuOpen)}
         type="button"
       >
         <Menu className="h-6 w-6" />
-      </button>
+      </button> */}
 
       {/* 移动端菜单 - 全屏覆盖 */}
       {isMenuOpen && (
