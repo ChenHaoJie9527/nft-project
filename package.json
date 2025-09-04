@@ -23,6 +23,7 @@
     "next": "15.5.2",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "rooks": "^9.2.0",
     "tailwind-merge": "^2.5.5",
     "viem": "2.x",
     "wagmi": "^2.16.9",

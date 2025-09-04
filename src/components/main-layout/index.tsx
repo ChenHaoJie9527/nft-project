@@ -2,6 +2,7 @@
 
 import { memo } from 'react';
 import { cn } from '@/lib/utils';
+import BottomNavigation from '../bottom-navigation';
 import Footer from '../footer';
 import Header from '../header';
 
@@ -19,11 +20,14 @@ export const MainLayout = memo(function MainLayoutComponent({
       {/* Header - 固定在顶部 */}
       <Header />
 
-      {/* Main Content - 自适应高度，确保footer在底部 */}
-      <main className="w-full flex-1">{children}</main>
+      {/* Main Content - 自适应高度，确保footer在底部，为底部导航栏留出空间 */}
+      <main className="w-full flex-1 pb-16 md:pb-0">{children}</main>
 
       {/* Footer - 始终在底部 */}
       <Footer />
+
+      {/* Bottom Navigation - 仅在移动端显示 */}
+      <BottomNavigation />
     </div>
   );
 });

@@ -37,7 +37,6 @@ export default function WalletConnectButton() {
 
   useEffect(() => {
     if (!isConnected) {
-      console.log('断开链接了');
       handleDisconnect();
     }
   }, [isConnected]);

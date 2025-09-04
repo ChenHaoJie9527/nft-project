@@ -166,7 +166,7 @@
 
   /* 响应式字体权重 */
   .font-responsive {
-    font-weight: 400; /* 默认正常 */
+    font-weight: 500; /* 默认正常 */
   }
   
   @media (min-width: 640px) { /* sm */
