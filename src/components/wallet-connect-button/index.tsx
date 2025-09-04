@@ -100,7 +100,7 @@ export default function WalletConnectButton() {
         return (
           <div className="flex items-center gap-2">
             {/* 网络选择按钮 */}
-            <Button
+            {/* <Button
               className="flex min-h-10 items-center gap-2"
               onClick={openChainModal}
               size="sm"
@@ -126,7 +126,7 @@ export default function WalletConnectButton() {
               )}
               <span className="hidden sm:inline">{chain.name}</span>
               <ChevronDown className="h-3 w-3" />
-            </Button>
+            </Button> */}
 
             {/* 账户信息按钮 */}
             <Button

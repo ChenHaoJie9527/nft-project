@@ -1,8 +1,8 @@
-'use client';
+// 'use client';
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import Link from 'next/link';
-import { useScrollHeader } from '@/hooks/use-scroll-header';
+// import { useScrollHeader } from '@/hooks/use-scroll-header';
 import { cn } from '@/lib/utils';
 import ActionButton from './action-button';
 
@@ -37,18 +37,16 @@ type HeaderProps = {
 export default function Header({
   className,
   variant = 'default',
-  scrollThreshold = 20,
+  // scrollThreshold = 20,
 }: HeaderProps) {
-  const { isVisible } = useScrollHeader({
-    threshold: scrollThreshold,
-    hideOnScrollDown: true,
-    showOnScrollUp: true,
-  });
+  // const { isVisible } = useScrollHeader({
+  //   threshold: scrollThreshold,
+  //   hideOnScrollDown: true,
+  //   showOnScrollUp: true,
+  // });
 
   return (
-    <header
-      className={cn(headerVariants({ variant, hidden: !isVisible }), className)}
-    >
+    <header className={cn(headerVariants({ variant }), className)}>
       <div className="mx-auto flex h-16 w-full items-center justify-between px-4 md:w-[90vw] md:px-6 lg:w-[90vw] xl:w-[85vw] 2xl:w-[70vw]">
         {/* Logo/Brand */}
         <div className="flex items-center">
