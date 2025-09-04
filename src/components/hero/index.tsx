@@ -1,6 +1,7 @@
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { Button } from '../ui/button';
+import HeroTitle from './hero-title';
 
 type HeroProps = Partial<{
   subtitle: string;
@@ -30,13 +31,7 @@ export function Hero({
       {/* 标题 */}
       <div className="-top-[30%] absolute inset-0 left-[5vw] z-10 flex items-center">
         <div className="pr-8 pl-2 md:pl-12">
-          <h1 className="space-y-4 text-hero text-white">
-            <div>Discover,</div>
-            <div>collect, and sell</div>
-            <div>
-              extraordinary <span className="text-blue-400">NFTs</span>
-            </div>
-          </h1>
+          <HeroTitle />
         </div>
       </div>
 

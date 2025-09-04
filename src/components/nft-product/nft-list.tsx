@@ -1,6 +1,6 @@
 import Image from 'next/image';
-import { FlipButton } from '@/components/flip-button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { FlipButton } from '@/components/ui/flip-button';
 
 // NFT数据接口
 interface NFTItem {
