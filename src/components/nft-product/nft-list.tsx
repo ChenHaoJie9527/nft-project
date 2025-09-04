@@ -82,11 +82,11 @@ const nftData: NFTItem[] = [
 function NFTItem({ nft }: { nft: NFTItem }) {
   return (
     <Card
-      className="overflow-hidden rounded-xl transition-shadow duration-300 hover:shadow-lg"
+      className="space-y-4 overflow-hidden rounded-xl p-[20px] shadow-xl transition-shadow duration-300 hover:shadow-2xl"
       key={nft.id}
     >
       {/* NFT图片区域 */}
-      <div className="relative aspect-square overflow-hidden">
+      <div className="relative aspect-square overflow-hidden rounded-lg">
         <Image
           alt={nft.identifier}
           className="h-full w-full object-cover"
@@ -96,15 +96,15 @@ function NFTItem({ nft }: { nft: NFTItem }) {
         />
       </div>
 
-      <CardContent className="bg-white p-4">
+      <CardContent className="bg-white p-2">
         {/* 第一行：标题 */}
-        <p className="mb-2 text-gray-400 text-sm">{nft.title}</p>
+        <p className="mb-2 font-[800] text-[#CACACA] text-sm">{nft.title}</p>
 
         {/* 第二行：标识符和出价者头像 */}
         <div className="mb-3 flex items-center justify-between">
           <h3 className="font-bold text-black text-lg">{nft.identifier}</h3>
           {/* 出价者头像 */}
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-lg">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-200 text-lg">
             {nft.bidderAvatar}
           </div>
         </div>
