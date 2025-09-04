@@ -2,7 +2,7 @@ import NFTList from './nft-list';
 
 export function NFTProduct() {
   return (
-    <section className="flex w-full flex-col items-center px-4 py-8">
+    <section className="flex w-full flex-col items-center py-8">
       <h2 className="mb-4 font-[500] text-responsive-xl tracking-responsive">
         NFT product exclusive
       </h2>

@@ -127,7 +127,7 @@ function NFTItem({ nft }: { nft: NFTItem }) {
 
 function NFTList() {
   return (
-    <div className="grid w-full max-w-7xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid w-full grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
       {nftData.map((nft) => (
         <NFTItem key={nft.id} nft={nft} />
       ))}
