@@ -3,6 +3,7 @@ import type { NextConfig } from 'next';
 const nextConfig: NextConfig = {
   // 图片优化配置
   images: {
+    qualities: [90],
     // 允许的图片域名（如果使用外部图片）
     domains: [],
     // 图片格式支持
@@ -17,6 +18,16 @@ const nextConfig: NextConfig = {
     dangerouslyAllowSVG: false,
     // 内容安全策略
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
+
+    //允许外部图片域名配置
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: "/**"
+      }
+    ]
   },
   
   // 压缩配置

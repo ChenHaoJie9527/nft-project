@@ -22,7 +22,7 @@ export function Hero({
           className="object-cover"
           fill
           priority
-          quality={100}
+          quality={90}
           sizes="(max-width: 640px) 100vw, (max-width: 768px) 100vw, (max-width: 1024px) 100vw, (max-width: 1280px) 100vw, 100vw"
           src={backgroundImage}
         />
