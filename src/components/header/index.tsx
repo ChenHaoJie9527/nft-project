@@ -52,7 +52,7 @@ export default function Header({
         <div className="flex items-center">
           <Link className="flex items-center space-x-2 lg:mr-6" href="/">
             <div className="h-8 w-8 rounded-md bg-foreground" />
-            <span className="hidden font-responsive text-responsive-base lg:inline-block">
+            <span className="hidden font-responsive text-responsive-sm tracking-responsive lg:inline-block">
               Logo
             </span>
           </Link>
