@@ -33,13 +33,13 @@ export default function EIP712Signature() {
     if (context.orderData) {
       setOrderData(context.orderData);
     }
-  }, [context.orderData]);
+  }, [context.orderData, setOrderData]);
 
   useEffect(() => {
     if (buyContext.orderData) {
       setBuyOrderData(buyContext.orderData);
     }
-  }, [buyContext.orderData]);
+  }, [buyContext.orderData, setBuyOrderData]);
 
   const handleEIP712Sign = async () => {
     try {

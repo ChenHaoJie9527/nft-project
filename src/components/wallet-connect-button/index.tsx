@@ -39,7 +39,7 @@ export default function WalletConnectButton() {
     if (!isConnected) {
       handleDisconnect();
     }
-  }, [isConnected]);
+  }, [isConnected, handleDisconnect]);
 
   return (
     <ConnectButton.Custom>
