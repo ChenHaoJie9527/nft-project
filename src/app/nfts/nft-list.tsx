@@ -83,12 +83,12 @@ function NFTItem({ nft }: { nft: Awaited<ReturnType<typeof getUserNFTs>>[0] }) {
       <CardFooter className="p-4 pt-0">
         {nft.status === 'owned' && (
           <Button className="w-full rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700">
-            管理
+            挂单
           </Button>
         )}
         {nft.status === 'listed' && (
           <Button className="w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
-            编辑
+            取消挂单
           </Button>
         )}
         {nft.status === 'sold' && (
@@ -115,15 +115,15 @@ export default async function Nfts() {
         {/* 简单统计 */}
         <div className="mt-6 flex gap-4">
           <div className="flex items-center gap-2">
-            <Package className="h-5 w-5 text-blue-600" />
+            <Package className="h-5 w-5 text-secondary" />
             <span className="text-gray-600 text-sm">持有: {ownedCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Eye className="h-5 w-5 text-green-600" />
+            <Eye className="h-5 w-5 text-primary" />
             <span className="text-gray-600 text-sm">挂单: {listedCount}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Heart className="h-5 w-5 text-purple-600" />
+            <Heart className="h-5 w-5 text-destructive" />
             <span className="text-gray-600 text-sm">售出: {soldCount}</span>
           </div>
         </div>
